@@ -18,6 +18,7 @@ import { LoginButton } from '../components/auth/LoginButton'
 import { UserAvatar } from '../components/auth/UserAvatar'
 import { AnalyticsDialog } from '../components/auth/AnalyticsDialog'
 import { MigrationDialog } from '../components/auth/MigrationDialog'
+import { HowToUseDialog } from '../components/HowToUseDialog'
 
 type Grade = {
   gpa: number
@@ -35,6 +36,7 @@ const MainPage = () => {
   const [semesters, setSemesters] = useState<Grade[]>([])
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false)
   const [showMigrationDialog, setShowMigrationDialog] = useState(false)
+  const [showHowToUseDialog, setShowHowToUseDialog] = useState(false)
 
   useEffect(() => {
     const toastMessage = localStorage.getItem('showToast')
@@ -172,10 +174,7 @@ const MainPage = () => {
             {/* Left: How To Use Button */}
             <div className="flex-1 flex justify-start">
               <button
-                onClick={() => {
-                  // TODO: Show how to use modal/page
-                  toast.success('How to use guide coming soon!')
-                }}
+                onClick={() => setShowHowToUseDialog(true)}
                 className="p-3 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200 shadow-sm"
                 title="How to use"
               >
@@ -405,6 +404,11 @@ const MainPage = () => {
           // Refresh the page to load data from Firestore
           window.location.reload()
         }}
+      />
+
+      <HowToUseDialog
+        open={showHowToUseDialog}
+        onOpenChange={setShowHowToUseDialog}
       />
     </div>
   )
