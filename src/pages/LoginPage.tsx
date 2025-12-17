@@ -41,7 +41,24 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      )
+
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        // Send another verification email
+        await sendEmailVerification(userCredential.user)
+        toast.error(
+          'Please verify your email first. A new verification email has been sent.'
+        )
+        // Sign out the unverified user
+        await auth.signOut()
+        return
+      }
+
       toast.success('Signed in successfully!')
       localStorage.setItem('justSignedIn', 'true')
       navigate('/')
@@ -89,9 +106,18 @@ export default function LoginPage() {
         password
       )
       await sendEmailVerification(userCredential.user)
-      toast.success('Account created! Please verify your email.')
-      localStorage.setItem('justSignedIn', 'true')
-      navigate('/')
+      // Sign out immediately - user must verify email first
+      await auth.signOut()
+      toast.success(
+        'Account created! Please check your email to verify your account before signing in.',
+        {
+          duration: 5000,
+        }
+      )
+      // Switch to login mode
+      setMode('login')
+      setPassword('')
+      setConfirmPassword('')
     } catch (error) {
       const authError = error as AuthError
       console.error('Signup error:', authError)

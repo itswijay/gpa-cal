@@ -13,10 +13,12 @@ export interface AuthContextType {
   user: User | null
   loading: boolean
   isAuthenticated: boolean
+  isEmailVerified: boolean
   isGuest: boolean
   signInWithGoogle: () => Promise<{ isNewUser: boolean } | void>
   signOut: () => Promise<void>
   sendVerificationEmail: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -35,6 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe()
   }, [])
 
+  // Refresh user data (useful after email verification)
+  const refreshUser = async (): Promise<void> => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload()
+      setUser({ ...auth.currentUser })
+    }
+  }
+
   const signInWithGoogle = async (): Promise<{ isNewUser: boolean } | void> => {
     try {
       const result = await signInWithPopup(auth, googleProvider)
@@ -44,11 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isNewUser =
         user.metadata.creationTime === user.metadata.lastSignInTime
 
-      // Send verification email if email is not verified
-      if (!user.emailVerified) {
-        await sendEmailVerification(user)
-      }
-
+      // Google users are automatically verified
       return { isNewUser }
     } catch (error) {
       console.error('Error signing in with Google:', error)
@@ -88,10 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     isAuthenticated: !!user,
+    isEmailVerified: user?.emailVerified ?? false,
     isGuest: !user,
     signInWithGoogle,
     signOut,
     sendVerificationEmail,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
