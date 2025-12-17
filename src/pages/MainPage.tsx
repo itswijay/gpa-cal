@@ -44,7 +44,17 @@ const MainPage = () => {
       toast.success(toastMessage)
       localStorage.removeItem('showToast')
     }
-  }, [])
+
+    // Check if user just signed in and has local data to migrate
+    const justSignedIn = localStorage.getItem('justSignedIn')
+    if (justSignedIn && isAuthenticated) {
+      localStorage.removeItem('justSignedIn')
+      const localData = localStorage.getItem('gpaData')
+      if (localData && JSON.parse(localData).length > 0) {
+        setShowMigrationDialog(true)
+      }
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     const savedData = JSON.parse(
@@ -215,20 +225,7 @@ const MainPage = () => {
               ) : isAuthenticated ? (
                 <UserAvatar />
               ) : (
-                <LoginButton
-                  variant="outline"
-                  size="sm"
-                  onLoginSuccess={(isNewUser) => {
-                    if (isNewUser) {
-                      // Check if there's local data to migrate
-                      const localData = localStorage.getItem('gpaData')
-                      if (localData && JSON.parse(localData).length > 0) {
-                        setShowMigrationDialog(true)
-                      }
-                    }
-                    toast.success('Signed in successfully!')
-                  }}
-                />
+                <LoginButton variant="outline" size="sm" />
               )}
             </div>
           </div>
