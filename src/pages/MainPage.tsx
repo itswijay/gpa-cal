@@ -196,8 +196,20 @@ const MainPage = () => {
               </button>
             </div>
 
-            {/* Right: Auth Button */}
-            <div className="flex-1 flex justify-end">
+            {/* Right: GitHub & Auth Button */}
+            <div className="flex-1 flex justify-end items-center gap-2">
+              {/* GitHub Button */}
+              <a
+                href="https://github.com/thewijay/gpa-cal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3 rounded-full hover:bg-accent transition-colors duration-200"
+                title="Star us on GitHub & contribute!"
+              >
+                <Github className="w-5 h-5" />
+              </a>
+
+              {/* Auth Button */}
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
               ) : isAuthenticated ? (
@@ -355,25 +367,6 @@ const MainPage = () => {
           </div>
         </div>
       </main>
-
-      {/* GitHub Section - Above footer border */}
-      <div className="w-full text-center bg-background py-3">
-        <div className="flex items-center justify-center">
-          <a
-            href="https://github.com/thewijay/gpa-cal"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 rounded-md transition-all duration-200 text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-            title="Star us on GitHub & contribute!"
-          >
-            <Github className="w-4 h-4" />
-            <span>Contribute on GitHub</span>
-          </a>
-        </div>
-        <p className="text-xs text-muted-foreground mt-3 opacity-60">
-          Open source • Help us improve this project
-        </p>
-      </div>
 
       <footer className="w-full text-center bg-background py-3 border-t border-border z-50">
         <div className="text-xs text-muted-foreground opacity-50">
