@@ -3,11 +3,10 @@
 @tailwind utilities;
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding-top: 1rem;
-  padding-bottom: 0;
-  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
 }
 
 @keyframes logo-spin {

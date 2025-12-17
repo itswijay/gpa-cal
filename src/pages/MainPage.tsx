@@ -1,10 +1,23 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../components/theme-provider'
-import { Sun, Moon, Trash2, Edit3, Github } from 'lucide-react'
+import {
+  Sun,
+  Moon,
+  Trash2,
+  Edit3,
+  Github,
+  BarChart3,
+  HelpCircle,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CountUp from 'react-countup'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
+import { useAuth } from '../hooks/useAuth'
+import { LoginButton } from '../components/auth/LoginButton'
+import { UserAvatar } from '../components/auth/UserAvatar'
+import { AnalyticsDialog } from '../components/auth/AnalyticsDialog'
+import { MigrationDialog } from '../components/auth/MigrationDialog'
 
 type Grade = {
   gpa: number
@@ -18,7 +31,10 @@ type Grade = {
 const MainPage = () => {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { isAuthenticated, isGuest, loading } = useAuth()
   const [semesters, setSemesters] = useState<Grade[]>([])
+  const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false)
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false)
 
   useEffect(() => {
     const toastMessage = localStorage.getItem('showToast')
@@ -150,10 +166,25 @@ const MainPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground p-0 mt-0">
       <main className="flex-grow">
-        <div className="min-h-screen w-full px-4 sm:px-6 md:px-10 py-2">
-          <div className="max-w-4xl mx-auto">
-            {/* Toggle Button */}
-            <div className="flex justify-center w-full mb-6">
+        <div className="min-h-screen w-full px-4 sm:px-6 md:px-10 py-4">
+          {/* Header with How To Use, Theme Toggle & Auth - Full Width */}
+          <div className="flex items-center justify-between w-full mb-6">
+            {/* Left: How To Use Button */}
+            <div className="flex-1 flex justify-start">
+              <button
+                onClick={() => {
+                  // TODO: Show how to use modal/page
+                  toast.success('How to use guide coming soon!')
+                }}
+                className="p-3 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200 shadow-sm"
+                title="How to use"
+              >
+                <HelpCircle className="w-5 h-5 text-primary" />
+              </button>
+            </div>
+
+            {/* Center: Theme Toggle */}
+            <div className="flex justify-center">
               <button
                 onClick={toggleTheme}
                 className="p-3 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200 shadow-sm"
@@ -166,6 +197,33 @@ const MainPage = () => {
               </button>
             </div>
 
+            {/* Right: Auth Button */}
+            <div className="flex-1 flex justify-end">
+              {loading ? (
+                <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+              ) : isAuthenticated ? (
+                <UserAvatar />
+              ) : (
+                <LoginButton
+                  variant="outline"
+                  size="sm"
+                  onLoginSuccess={(isNewUser) => {
+                    if (isNewUser) {
+                      // Check if there's local data to migrate
+                      const localData = localStorage.getItem('gpaData')
+                      if (localData && JSON.parse(localData).length > 0) {
+                        setShowMigrationDialog(true)
+                      }
+                    }
+                    toast.success('Signed in successfully!')
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Content Container */}
+          <div className="max-w-2xl mx-auto">
             {/* Page Title */}
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
               GPA Summary
@@ -259,6 +317,24 @@ const MainPage = () => {
               </button>
             </div>
 
+            {/* View Analytics Button */}
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => {
+                  if (isGuest) {
+                    setShowAnalyticsDialog(true)
+                  } else {
+                    // TODO: Navigate to analytics page (Phase 5)
+                    toast.success('Analytics coming soon!')
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-200 shadow-sm text-sm font-medium"
+              >
+                <BarChart3 className="w-4 h-4" />
+                View Analytics
+              </button>
+            </div>
+
             {/* GPA Box */}
             {semesters.length > 0 && (
               <motion.div
@@ -305,6 +381,31 @@ const MainPage = () => {
           Developed by Toran
         </div>
       </footer>
+
+      {/* Auth Dialogs */}
+      <AnalyticsDialog
+        open={showAnalyticsDialog}
+        onOpenChange={setShowAnalyticsDialog}
+        onLoginSuccess={(isNewUser) => {
+          if (isNewUser) {
+            const localData = localStorage.getItem('gpaData')
+            if (localData && JSON.parse(localData).length > 0) {
+              setShowMigrationDialog(true)
+            }
+          }
+          toast.success('Signed in successfully!')
+        }}
+      />
+
+      <MigrationDialog
+        open={showMigrationDialog}
+        onOpenChange={setShowMigrationDialog}
+        onMigrationComplete={() => {
+          toast.success('Data imported successfully!')
+          // Refresh the page to load data from Firestore
+          window.location.reload()
+        }}
+      />
     </div>
   )
 }
