@@ -208,12 +208,12 @@ const MainPage = () => {
 
             {/* Right: GitHub & Auth Button */}
             <div className="flex-1 flex justify-end items-center gap-2">
-              {/* GitHub Button */}
+              {/* GitHub Button - Hidden on mobile */}
               <a
                 href="https://github.com/thewijay/gpa-cal"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3 rounded-full hover:bg-accent transition-colors duration-200"
+                className="hidden sm:block p-3 rounded-full hover:bg-accent transition-colors duration-200"
                 title="Star us on GitHub & contribute!"
               >
                 <Github className="w-5 h-5" />
@@ -364,6 +364,19 @@ const MainPage = () => {
           </div>
         </div>
       </main>
+
+      {/* GitHub Button - Mobile only, above footer */}
+      <div className="sm:hidden w-full flex justify-center py-2">
+        <a
+          href="https://github.com/thewijay/gpa-cal"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
+        >
+          <Github className="w-3.5 h-3.5" />
+          <span>Star us on GitHub</span>
+        </a>
+      </div>
 
       <footer className="w-full text-center bg-background py-3 border-t border-border z-50">
         <div className="text-xs text-muted-foreground opacity-50">
