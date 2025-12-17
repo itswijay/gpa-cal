@@ -110,19 +110,21 @@ export function MigrationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <CloudUpload className="h-6 w-6 text-primary" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <CloudUpload className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Import Your Data?
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             We found existing GPA data on this device. Would you like to import
             it to your account?
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 rounded-lg border bg-muted/50 p-4">
-          <h4 className="font-medium">Found on this device:</h4>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+        <div className="mt-3 sm:mt-4 rounded-lg border bg-muted/50 p-3 sm:p-4">
+          <h4 className="font-medium text-sm sm:text-base">
+            Found on this device:
+          </h4>
+          <ul className="mt-2 space-y-1 text-xs sm:text-sm text-muted-foreground">
             <li>
               • {localData.length} semester{localData.length !== 1 ? 's' : ''}{' '}
               of GPA data
@@ -136,11 +138,11 @@ export function MigrationDialog({
           </ul>
         </div>
 
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="mt-4 sm:mt-6 flex flex-col gap-2">
           <Button
             onClick={handleImportData}
             disabled={isImporting || isClearing}
-            className="w-full"
+            className="w-full text-sm"
           >
             {isImporting ? (
               <>
@@ -150,7 +152,10 @@ export function MigrationDialog({
             ) : (
               <>
                 <CloudUpload className="mr-2 h-4 w-4" />
-                Import Data to My Account
+                <span className="hidden sm:inline">
+                  Import Data to My Account
+                </span>
+                <span className="sm:hidden">Import Data</span>
               </>
             )}
           </Button>
@@ -158,7 +163,7 @@ export function MigrationDialog({
             variant="outline"
             onClick={handleStartFresh}
             disabled={isImporting || isClearing}
-            className="w-full"
+            className="w-full text-sm"
           >
             {isClearing ? (
               <>
@@ -174,7 +179,7 @@ export function MigrationDialog({
           </Button>
         </div>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-3 sm:mt-4 text-center text-[10px] sm:text-xs text-muted-foreground">
           Importing will sync your data to the cloud and make it accessible from
           any device.
         </p>

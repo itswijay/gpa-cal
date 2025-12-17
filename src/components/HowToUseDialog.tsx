@@ -107,33 +107,33 @@ export function HowToUseDialog({ open, onOpenChange }: HowToUseDialogProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <StepIcon className="h-5 w-5 text-primary" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10">
+              <StepIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
-            {step.title}
+            <span className="flex-1">{step.title}</span>
           </DialogTitle>
-          <DialogDescription className="pt-2">
+          <DialogDescription className="pt-2 text-xs sm:text-sm">
             {step.description}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-3 sm:mt-4 space-y-2">
           {step.tips.map((tip, index) => (
             <div
               key={index}
-              className="flex items-start gap-2 rounded-lg bg-muted/50 p-3"
+              className="flex items-start gap-2 rounded-lg bg-muted/50 p-2 sm:p-3"
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
                 {index + 1}
               </span>
-              <p className="text-sm text-muted-foreground">{tip}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{tip}</p>
             </div>
           ))}
         </div>
 
         {/* Step Indicators */}
-        <div className="mt-6 flex items-center justify-center gap-1.5">
+        <div className="mt-4 sm:mt-6 flex items-center justify-center gap-1.5">
           {steps.map((_, index) => (
             <button
               key={index}
@@ -148,29 +148,39 @@ export function HowToUseDialog({ open, onOpenChange }: HowToUseDialogProps) {
         </div>
 
         {/* Navigation */}
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-3 sm:mt-4 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={handlePrevious}
             disabled={currentStep === 0}
-            className="gap-1"
+            size="sm"
+            className="gap-1 text-xs sm:text-sm"
           >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Previous</span>
+            <span className="xs:hidden">Prev</span>
           </Button>
 
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs sm:text-sm text-muted-foreground">
             {currentStep + 1} / {steps.length}
           </span>
 
           {currentStep === steps.length - 1 ? (
-            <Button onClick={handleClose} className="gap-1">
+            <Button
+              onClick={handleClose}
+              size="sm"
+              className="gap-1 text-xs sm:text-sm"
+            >
               Get Started
             </Button>
           ) : (
-            <Button onClick={handleNext} className="gap-1">
+            <Button
+              onClick={handleNext}
+              size="sm"
+              className="gap-1 text-xs sm:text-sm"
+            >
               Next
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           )}
         </div>
