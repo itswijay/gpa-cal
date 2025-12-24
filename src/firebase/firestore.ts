@@ -228,68 +228,19 @@ export function validateImportData(data: unknown): ImportValidation {
 }
 
 /**
- * Import JSON data to localStorage
- */
-export function importDataToLocalStorage(
-  data: GPAEntry[],
-  merge: boolean = false
-): void {
-  if (merge) {
-    // Merge with existing data
-    const existingData = JSON.parse(
-      localStorage.getItem('gpaData') || '[]'
-    ) as GPAEntry[]
-    const semesterMap = new Map(
-      existingData.map((entry) => [entry.semester, entry])
-    )
-
-    // Add/update imported data
-    data.forEach((entry) => {
-      semesterMap.set(entry.semester, entry)
-    })
-
-    localStorage.setItem(
-      'gpaData',
-      JSON.stringify(Array.from(semesterMap.values()))
-    )
-  } else {
-    // Replace existing data
-    localStorage.setItem('gpaData', JSON.stringify(data))
-  }
-}
-
-/**
- * Import JSON data to Firestore
+ * Import JSON data to Firestore (replaces existing data)
  */
 export async function importDataToFirestore(
   userId: string,
-  data: GPAEntry[],
-  merge: boolean = false
+  data: GPAEntry[]
 ): Promise<void> {
-  if (!merge) {
-    // Delete existing data first
-    const existingData = await getSemesterData(userId)
-    const deletePromises = existingData.map((entry) =>
-      deleteSemesterData(userId, entry.semester)
-    )
-    await Promise.all(deletePromises)
-  }
+  // Delete existing data first to ensure clean import
+  const existingData = await getSemesterData(userId)
+  const deletePromises = existingData.map((entry) =>
+    deleteSemesterData(userId, entry.semester)
+  )
+  await Promise.all(deletePromises)
 
   // Import new data
   await migrateLocalDataToFirestore(userId, data)
-}
-
-/**
- * Export localStorage data as JSON object
- */
-export function exportLocalStorageData(): GPAEntry[] {
-  const data = localStorage.getItem('gpaData')
-  return data ? JSON.parse(data) : []
-}
-
-/**
- * Export Firestore data as JSON object
- */
-export async function exportFirestoreData(userId: string): Promise<GPAEntry[]> {
-  return await getSemesterData(userId)
 }
