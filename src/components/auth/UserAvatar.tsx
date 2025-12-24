@@ -74,10 +74,10 @@ export function UserAvatar({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}
-          className="cursor-pointer text-destructive focus:text-destructive"
+          className="cursor-pointer bg-destructive/5 text-destructive hover:bg-destructive/15 hover:text-destructive focus:bg-destructive/15 focus:text-destructive dark:bg-destructive/10 dark:text-white/80 dark:hover:bg-destructive/20"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign out
+          <span className="font-medium">Sign out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
