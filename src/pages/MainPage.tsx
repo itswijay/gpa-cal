@@ -185,7 +185,15 @@ const MainPage = () => {
             <div className="flex-1 flex justify-start">
               <button
                 onClick={() => setShowHowToUseDialog(true)}
-                className="p-3 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200 shadow-sm"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors duration-200 shadow-sm"
+                title="How to use"
+              >
+                <HelpCircle className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium">How to Use</span>
+              </button>
+              <button
+                onClick={() => setShowHowToUseDialog(true)}
+                className="sm:hidden p-3 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200 shadow-sm"
                 title="How to use"
               >
                 <HelpCircle className="w-5 h-5 text-primary" />
