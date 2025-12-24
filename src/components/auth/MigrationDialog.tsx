@@ -101,8 +101,6 @@ export function MigrationDialog({
       toast.error('Failed to set up account. Please try again.')
     } finally {
       setIsClearing(false)
-    } finally {
-      setIsClearing(false)
     }
   }
 

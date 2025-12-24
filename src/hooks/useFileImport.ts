@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { validateImportData } from '../firebase/firestore'
-import type { GPAEntry, ImportValidation } from '../firebase/firestore'
+import type { ImportValidation } from '../firebase/firestore'
 
 interface FileImportResult {
   success: boolean
@@ -55,7 +55,7 @@ export function useFileImport() {
       let parsedData: unknown
       try {
         parsedData = JSON.parse(fileContent)
-      } catch (error) {
+      } catch {
         return {
           success: false,
           validation: {
