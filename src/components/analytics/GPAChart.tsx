@@ -46,6 +46,38 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
         : 'stable'
       : 'stable'
 
+  // Calculate trend line using linear regression
+  const calculateTrendLine = () => {
+    if (chartData.length < 2) return null
+
+    const n = chartData.length
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumX2 = 0
+
+    chartData.forEach((point, index) => {
+      sumX += index
+      sumY += point.GPA
+      sumXY += index * point.GPA
+      sumX2 += index * index
+    })
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+    const intercept = (sumY - slope * sumX) / n
+
+    // Calculate trend line data
+    const trendData = chartData.map((point, index) => ({
+      ...point,
+      Trend: parseFloat((slope * index + intercept).toFixed(3)),
+    }))
+
+    return { trendData, slope, intercept }
+  }
+
+  const trendLineData = calculateTrendLine()
+  const chartDataWithTrend = trendLineData?.trendData || chartData
+
   const trendColor =
     trend === 'up'
       ? 'text-green-500'
@@ -105,7 +137,7 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
 
       {/* Trend Indicator */}
       <div
-        className={`mb-6 flex items-center gap-2 text-sm sm:text-base font-medium ${trendColor}`}
+        className={`mb-6 flex justify-center items-center gap-2 text-sm sm:text-base font-medium ${trendColor}`}
       >
         <span>{trendLabel}</span>
       </div>
@@ -114,19 +146,29 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
       <div className="w-full h-80 sm:h-96">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={chartData}
+            data={chartDataWithTrend}
             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--muted-foreground) / 0.2)"
+              vertical={true}
+              horizontal={true}
+            />
             <XAxis
               dataKey="semester"
-              stroke="var(--muted-foreground)"
-              style={{ fontSize: '12px' }}
+              stroke="hsl(var(--muted-foreground) / 0.5)"
+              style={{ fontSize: '13px', fontWeight: '500' }}
+              type="category"
+              padding={{ left: 30, right: 30 }}
+              tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
             />
             <YAxis
-              stroke="var(--muted-foreground)"
-              style={{ fontSize: '12px' }}
+              stroke="hsl(var(--muted-foreground) / 0.5)"
+              style={{ fontSize: '13px', fontWeight: '500' }}
               domain={[0, 4]}
+              padding={{ top: 20, bottom: 20 }}
+              tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
             />
             <Tooltip
               contentStyle={{
@@ -147,21 +189,50 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
               type="monotone"
               dataKey="GPA"
               stroke="var(--primary)"
-              strokeWidth={2}
-              dot={{ fill: 'var(--primary)', r: 5 }}
-              activeDot={{ r: 7 }}
+              strokeWidth={2.5}
+              dot={{
+                fill: 'hsl(217 91% 60%)',
+                stroke: 'var(--primary)',
+                strokeWidth: 2,
+                r: 6,
+              }}
+              activeDot={{
+                r: 8,
+                fill: 'hsl(217 91% 50%)',
+                stroke: 'var(--primary)',
+                strokeWidth: 2.5,
+              }}
               isAnimationActive={true}
               animationDuration={800}
             />
+            {trendLineData && (
+              <Line
+                type="monotone"
+                dataKey="Trend"
+                stroke={
+                  trendLineData.slope > 0.05
+                    ? 'hsl(142 76% 36%)'
+                    : trendLineData.slope < -0.05
+                    ? 'hsl(0 84% 60%)'
+                    : 'hsl(226 71% 40%)'
+                }
+                strokeWidth={2.5}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={true}
+                animationDuration={800}
+                name="Trend Line"
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Insights Text */}
       <div className="mt-6 p-3 bg-muted/30 rounded-lg">
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          📊 {chartData.length} semester{chartData.length > 1 ? 's' : ''} of
-          data • Track your academic journey over time
+        <p className="text-center text-xs sm:text-sm text-muted-foreground">
+          {chartData.length} semester{chartData.length > 1 ? 's' : ''} of data •
+          Track your academic journey over time
         </p>
       </div>
     </motion.div>
