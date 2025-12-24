@@ -19,7 +19,6 @@ import { UserAvatar } from '../components/auth/UserAvatar'
 import { AnalyticsDialog } from '../components/auth/AnalyticsDialog'
 import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
-import { EmailVerificationBanner } from '../components/auth/EmailVerificationBanner'
 
 type Grade = {
   gpa: number
@@ -233,9 +232,6 @@ const MainPage = () => {
 
           {/* Content Container */}
           <div className="max-w-2xl mx-auto">
-            {/* Email Verification Banner */}
-            <EmailVerificationBanner />
-
             {/* Page Title */}
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
               GPA Summary

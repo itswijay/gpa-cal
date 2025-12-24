@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendEmailVerification,
 } from 'firebase/auth'
 import type { AuthError } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
@@ -41,23 +40,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      )
-
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        // Send another verification email
-        await sendEmailVerification(userCredential.user)
-        toast.error(
-          'Please verify your email first. A new verification email has been sent.'
-        )
-        // Sign out the unverified user
-        await auth.signOut()
-        return
-      }
+      await signInWithEmailAndPassword(auth, email, password)
 
       toast.success('Signed in successfully!')
       localStorage.setItem('justSignedIn', 'true')
@@ -100,24 +83,10 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      )
-      await sendEmailVerification(userCredential.user)
-      // Sign out immediately - user must verify email first
-      await auth.signOut()
-      toast.success(
-        'Account created! Please check your email to verify your account before signing in.',
-        {
-          duration: 5000,
-        }
-      )
-      // Switch to login mode
-      setMode('login')
-      setPassword('')
-      setConfirmPassword('')
+      await createUserWithEmailAndPassword(auth, email, password)
+      toast.success('Account created successfully!')
+      localStorage.setItem('justSignedIn', 'true')
+      navigate('/')
     } catch (error) {
       const authError = error as AuthError
       console.error('Signup error:', authError)

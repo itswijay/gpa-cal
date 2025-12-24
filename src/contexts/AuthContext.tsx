@@ -5,7 +5,6 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signOut as firebaseSignOut,
-  sendEmailVerification,
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
 
@@ -13,11 +12,9 @@ export interface AuthContextType {
   user: User | null
   loading: boolean
   isAuthenticated: boolean
-  isEmailVerified: boolean
   isGuest: boolean
   signInWithGoogle: () => Promise<{ isNewUser: boolean } | void>
   signOut: () => Promise<void>
-  sendVerificationEmail: () => Promise<void>
   refreshUser: () => Promise<void>
 }
 
@@ -79,26 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const sendVerificationEmail = async (): Promise<void> => {
-    if (user && !user.emailVerified) {
-      try {
-        await sendEmailVerification(user)
-      } catch (error) {
-        console.error('Error sending verification email:', error)
-        throw error
-      }
-    }
-  }
-
   const value: AuthContextType = {
     user,
     loading,
     isAuthenticated: !!user,
-    isEmailVerified: user?.emailVerified ?? false,
     isGuest: !user,
     signInWithGoogle,
     signOut,
-    sendVerificationEmail,
     refreshUser,
   }
 
