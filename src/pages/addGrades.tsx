@@ -611,7 +611,6 @@ function Grades() {
               >
                 {isSaving ? (
                   <>
-                    <span className="inline-block animate-spin mr-2">⏳</span>
                     Saving...
                   </>
                 ) : isEditing ? (
