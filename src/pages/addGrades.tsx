@@ -313,7 +313,10 @@ function Grades() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="w-full justify-between bg-muted border-border hover:bg-accent text-muted-foreground"
-                      disabled={Boolean(localStorage.getItem('lockedFaculty'))}
+                      disabled={
+                        Boolean(localStorage.getItem('lockedFaculty')) ||
+                        isEditing
+                      }
                     >
                       <span className="truncate">{facultySelected}</span>
                       <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
@@ -345,7 +348,8 @@ function Grades() {
                       disabled={
                         facultySelected === DEFAULT_FACULTY ||
                         Boolean(localStorage.getItem('lockedDegree')) ||
-                        facultySelected === 'Select Your Faculty'
+                        facultySelected === 'Select Your Faculty' ||
+                        isEditing
                       }
                     >
                       <span className="truncate">{degreeSelected}</span>
