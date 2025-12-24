@@ -107,7 +107,7 @@ export function HowToUseDialog({ open, onOpenChange }: HowToUseDialogProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <DialogTitle className="flex flex-col sm:flex-row items-center gap-2 text-lg sm:text-xl text-center sm:text-left">
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10">
               <StepIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
