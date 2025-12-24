@@ -22,6 +22,33 @@ interface GPAChartProps {
   onClose: () => void
 }
 
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: Array<{
+    dataKey: string
+    value: number
+    name: string
+  }>
+  label?: string
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    const gpaPayload = payload.find((p) => p.dataKey === 'GPA')
+    if (gpaPayload) {
+      return (
+        <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-sm text-primary">
+            GPA: {gpaPayload.value.toFixed(3)}
+          </p>
+        </div>
+      )
+    }
+  }
+  return null
+}
+
 export function GPAChart({ data, onClose }: GPAChartProps) {
   // Transform data for chart display
   const chartData = data.map((item) => ({
@@ -45,38 +72,6 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
         ? 'down'
         : 'stable'
       : 'stable'
-
-  // Calculate trend line using linear regression
-  const calculateTrendLine = () => {
-    if (chartData.length < 2) return null
-
-    const n = chartData.length
-    let sumX = 0,
-      sumY = 0,
-      sumXY = 0,
-      sumX2 = 0
-
-    chartData.forEach((point, index) => {
-      sumX += index
-      sumY += point.GPA
-      sumXY += index * point.GPA
-      sumX2 += index * index
-    })
-
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
-    const intercept = (sumY - slope * sumX) / n
-
-    // Calculate trend line data
-    const trendData = chartData.map((point, index) => ({
-      ...point,
-      Trend: parseFloat((slope * index + intercept).toFixed(3)),
-    }))
-
-    return { trendData, slope, intercept }
-  }
-
-  const trendLineData = calculateTrendLine()
-  const chartDataWithTrend = trendLineData?.trendData || chartData
 
   const trendColor =
     trend === 'up'
@@ -143,10 +138,10 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
       </div>
 
       {/* Chart */}
-      <div className="w-full h-80 sm:h-96">
+      <div className="w-full h-64 sm:h-96">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={chartDataWithTrend}
+            data={chartData}
             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
           >
             <CartesianGrid
@@ -171,59 +166,42 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
               tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-              }}
-              labelStyle={{ color: 'var(--foreground)' }}
-              formatter={(value) => {
-                if (typeof value === 'number') {
-                  return [value.toFixed(3), 'GPA']
-                }
-                return ['N/A', 'GPA']
+              content={<CustomTooltip />}
+              cursor={{
+                stroke: 'hsl(var(--muted-foreground) / 0.5)',
+                strokeWidth: 1.5,
               }}
             />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+            <Legend
+              wrapperStyle={{
+                paddingTop: '20px',
+                color: '#10b981',
+              }}
+              formatter={() => ' Your GPA Progress'}
+            />
             <Line
               type="monotone"
               dataKey="GPA"
-              stroke="var(--primary)"
-              strokeWidth={2.5}
+              stroke="#10b981"
+              strokeWidth={3}
               dot={{
-                fill: 'hsl(217 91% 60%)',
-                stroke: 'var(--primary)',
+                fill: '#10b981',
+                stroke: '#10b981',
                 strokeWidth: 2,
                 r: 6,
               }}
               activeDot={{
                 r: 8,
-                fill: 'hsl(217 91% 50%)',
-                stroke: 'var(--primary)',
+                fill: '#059669',
+                stroke: '#10b981',
                 strokeWidth: 2.5,
               }}
               isAnimationActive={true}
               animationDuration={800}
+              connectNulls={true}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-            {trendLineData && (
-              <Line
-                type="monotone"
-                dataKey="Trend"
-                stroke={
-                  trendLineData.slope > 0.05
-                    ? 'hsl(142 76% 36%)'
-                    : trendLineData.slope < -0.05
-                    ? 'hsl(0 84% 60%)'
-                    : 'hsl(226 71% 40%)'
-                }
-                strokeWidth={2.5}
-                strokeDasharray="5 5"
-                dot={false}
-                isAnimationActive={true}
-                animationDuration={800}
-                name="Trend Line"
-              />
-            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
