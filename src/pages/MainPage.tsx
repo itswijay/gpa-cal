@@ -20,6 +20,7 @@ import { UserAvatar } from '../components/auth/UserAvatar'
 import { AnalyticsDialog } from '../components/auth/AnalyticsDialog'
 import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
+import { Spinner } from '../components/ui/spinner'
 import { deleteSemesterData } from '../firebase/firestore'
 
 type Grade = {
@@ -40,6 +41,17 @@ const MainPage = () => {
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false)
   const [showMigrationDialog, setShowMigrationDialog] = useState(false)
   const [showHowToUseDialog, setShowHowToUseDialog] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  // Detect sign-out by checking if user becomes null
+  useEffect(() => {
+    if (isSigningOut && !user && !isAuthenticated) {
+      // After a brief delay, hide the spinner
+      setTimeout(() => {
+        setIsSigningOut(false)
+      }, 1000)
+    }
+  }, [user, isAuthenticated, isSigningOut])
 
   useEffect(() => {
     const toastMessage = localStorage.getItem('showToast')
@@ -204,6 +216,16 @@ const MainPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground p-0 mt-0">
+      {/* Loading Overlay During Sign Out */}
+      {isSigningOut && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="flex flex-col items-center gap-4">
+            <Spinner className="h-8 w-8" />
+            <p className="text-white text-sm font-medium">Signing out...</p>
+          </div>
+        </div>
+      )}
+
       <main className="flex-grow">
         <div className="min-h-screen w-full px-4 sm:px-6 md:px-10 py-4">
           {/* Header with How To Use, Theme Toggle & Auth - Full Width */}
@@ -258,7 +280,7 @@ const MainPage = () => {
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
               ) : isAuthenticated ? (
-                <UserAvatar />
+                <UserAvatar onSignOutStart={() => setIsSigningOut(true)} />
               ) : (
                 <LoginButton variant="outline" size="sm" />
               )}
@@ -299,7 +321,6 @@ const MainPage = () => {
                         variants={rowVariants}
                         initial="initial"
                         animate="animate"
-                        exit="exit"
                         layout
                       >
                         <td className="p-2 sm:p-4 font-mono font-medium text-sm sm:text-base text-left border truncate">

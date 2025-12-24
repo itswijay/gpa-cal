@@ -10,15 +10,20 @@ import {
 
 interface UserAvatarProps {
   className?: string
+  onSignOutStart?: () => void
 }
 
-export function UserAvatar({ className = '' }: UserAvatarProps) {
+export function UserAvatar({
+  className = '',
+  onSignOutStart,
+}: UserAvatarProps) {
   const { user, signOut } = useAuth()
 
   if (!user) return null
 
   const handleSignOut = async () => {
     try {
+      onSignOutStart?.()
       await signOut()
     } catch (error) {
       console.error('Sign out failed:', error)
