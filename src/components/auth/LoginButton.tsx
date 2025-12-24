@@ -5,21 +5,16 @@ interface LoginButtonProps {
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   className?: string
-  onLoginSuccess?: (isNewUser: boolean) => void
 }
 
 export function LoginButton({
   variant = 'outline',
   size = 'default',
   className = '',
-  onLoginSuccess,
 }: LoginButtonProps) {
   const navigate = useNavigate()
 
   const handleClick = () => {
-    if (onLoginSuccess) {
-      onLoginSuccess(false)
-    }
     navigate('/login')
   }
 

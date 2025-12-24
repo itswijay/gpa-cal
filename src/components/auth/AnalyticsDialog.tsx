@@ -12,7 +12,6 @@ import { LoginButton } from './LoginButton'
 interface AnalyticsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onLoginSuccess?: (isNewUser: boolean) => void
 }
 
 const features = [
@@ -40,18 +39,7 @@ const features = [
   },
 ]
 
-export function AnalyticsDialog({
-  open,
-  onOpenChange,
-  onLoginSuccess,
-}: AnalyticsDialogProps) {
-  const handleLoginSuccess = (isNewUser: boolean) => {
-    onOpenChange(false)
-    if (onLoginSuccess) {
-      onLoginSuccess(isNewUser)
-    }
-  }
-
+export function AnalyticsDialog({ open, onOpenChange }: AnalyticsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -100,11 +88,7 @@ export function AnalyticsDialog({
             features!
           </p>
           <div className="flex flex-col gap-2">
-            <LoginButton
-              onLoginSuccess={handleLoginSuccess}
-              variant="default"
-              className="w-full"
-            />
+            <LoginButton variant="default" className="w-full" />
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}

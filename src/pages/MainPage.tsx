@@ -461,15 +461,6 @@ const MainPage = () => {
       <AnalyticsDialog
         open={showAnalyticsDialog}
         onOpenChange={setShowAnalyticsDialog}
-        onLoginSuccess={(isNewUser) => {
-          if (isNewUser) {
-            const localData = localStorage.getItem('gpaData')
-            if (localData && JSON.parse(localData).length > 0) {
-              setShowMigrationDialog(true)
-            }
-          }
-          toast.success('Signed in successfully!')
-        }}
       />
 
       <MigrationDialog
