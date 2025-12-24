@@ -14,11 +14,13 @@ import CountUp from 'react-countup'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
+import { useFirebaseData } from '../hooks/useFirebaseData'
 import { LoginButton } from '../components/auth/LoginButton'
 import { UserAvatar } from '../components/auth/UserAvatar'
 import { AnalyticsDialog } from '../components/auth/AnalyticsDialog'
 import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
+import { deleteSemesterData } from '../firebase/firestore'
 
 type Grade = {
   gpa: number
@@ -32,7 +34,8 @@ type Grade = {
 const MainPage = () => {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
-  const { isAuthenticated, isGuest, loading } = useAuth()
+  const { user, isAuthenticated, isGuest, loading } = useAuth()
+  const { data: firebaseData } = useFirebaseData()
   const [semesters, setSemesters] = useState<Grade[]>([])
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false)
   const [showMigrationDialog, setShowMigrationDialog] = useState(false)
@@ -56,17 +59,29 @@ const MainPage = () => {
     }
   }, [isAuthenticated])
 
+  // Load data based on authentication status
   useEffect(() => {
-    const savedData = JSON.parse(
-      localStorage.getItem('gpaData') || '[]'
-    ) as Grade[]
-    const sortedData = [...savedData].sort((a, b) => {
-      const semesterA = parseInt(a.semester.split(' ')[1])
-      const semesterB = parseInt(b.semester.split(' ')[1])
-      return semesterA - semesterB
-    })
-    setSemesters(sortedData)
-  }, [])
+    if (isAuthenticated && firebaseData.length > 0) {
+      // Use Firebase data for authenticated users
+      const sortedData = [...firebaseData].sort((a, b) => {
+        const semesterA = parseInt(a.semester.split(' ')[1])
+        const semesterB = parseInt(b.semester.split(' ')[1])
+        return semesterA - semesterB
+      })
+      setSemesters(sortedData)
+    } else if (isGuest) {
+      // Use localStorage for guest users
+      const savedData = JSON.parse(
+        localStorage.getItem('gpaData') || '[]'
+      ) as Grade[]
+      const sortedData = [...savedData].sort((a, b) => {
+        const semesterA = parseInt(a.semester.split(' ')[1])
+        const semesterB = parseInt(b.semester.split(' ')[1])
+        return semesterA - semesterB
+      })
+      setSemesters(sortedData)
+    }
+  }, [isAuthenticated, isGuest, firebaseData])
 
   const calculateGPA = () => {
     let totalGPA = 0
@@ -115,20 +130,32 @@ const MainPage = () => {
     }
   }
 
-  const handleDeleteSemester = (semesterToDelete: string) => {
+  const handleDeleteSemester = async (semesterToDelete: string) => {
     if (
       window.confirm(`Are you sure you want to delete ${semesterToDelete}?`)
     ) {
-      const updatedSemesters = semesters
-        .filter((sem) => sem.semester !== semesterToDelete)
-        .sort((a, b) => {
-          const semesterA = parseInt(a.semester.split(' ')[1])
-          const semesterB = parseInt(b.semester.split(' ')[1])
-          return semesterA - semesterB
-        })
-      localStorage.setItem('gpaData', JSON.stringify(updatedSemesters))
-      setSemesters(updatedSemesters)
-      toast.success(`${semesterToDelete} has been deleted`)
+      try {
+        if (isAuthenticated && user) {
+          // Delete from Firebase
+          await deleteSemesterData(user.uid, semesterToDelete)
+          toast.success(`${semesterToDelete} has been deleted`)
+        } else {
+          // Delete from localStorage
+          const updatedSemesters = semesters
+            .filter((sem) => sem.semester !== semesterToDelete)
+            .sort((a, b) => {
+              const semesterA = parseInt(a.semester.split(' ')[1])
+              const semesterB = parseInt(b.semester.split(' ')[1])
+              return semesterA - semesterB
+            })
+          localStorage.setItem('gpaData', JSON.stringify(updatedSemesters))
+          setSemesters(updatedSemesters)
+          toast.success(`${semesterToDelete} has been deleted`)
+        }
+      } catch (error) {
+        console.error('Error deleting semester:', error)
+        toast.error('Failed to delete semester')
+      }
     }
   }
 
