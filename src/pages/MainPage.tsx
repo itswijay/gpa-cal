@@ -21,6 +21,7 @@ import { AnalyticsDialog } from '../components/auth/AnalyticsDialog'
 import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
 import { Spinner } from '../components/ui/spinner'
+import { GPAChart } from '../components/analytics/GPAChart'
 import { deleteSemesterData } from '../firebase/firestore'
 
 type Grade = {
@@ -42,6 +43,7 @@ const MainPage = () => {
   const [showMigrationDialog, setShowMigrationDialog] = useState(false)
   const [showHowToUseDialog, setShowHowToUseDialog] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
 
   // Detect sign-out by checking if user becomes null
   useEffect(() => {
@@ -382,22 +384,23 @@ const MainPage = () => {
             </div>
 
             {/* View Analytics Button */}
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={() => {
-                  if (isGuest) {
-                    setShowAnalyticsDialog(true)
-                  } else {
-                    // TODO: Navigate to analytics page (Phase 5)
-                    toast.success('Analytics coming soon!')
-                  }
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-200 shadow-sm text-sm font-medium"
-              >
-                <BarChart3 className="w-4 h-4" />
-                View Analytics
-              </button>
-            </div>
+            {!showAnalytics && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => {
+                    if (isGuest) {
+                      setShowAnalyticsDialog(true)
+                    } else if (isAuthenticated) {
+                      setShowAnalytics(true)
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-200 shadow-sm text-sm font-medium"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  View Analytics
+                </button>
+              </div>
+            )}
 
             {/* GPA Box */}
             {semesters.length > 0 && (
