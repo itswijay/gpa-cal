@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { BarChart3, RefreshCw, Target, TrendingUp, X } from 'lucide-react'
+import { BarChart3, RefreshCw, Target, TrendingUp } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -46,10 +45,7 @@ export function AnalyticsDialog({
   onOpenChange,
   onLoginSuccess,
 }: AnalyticsDialogProps) {
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
-
   const handleLoginSuccess = (isNewUser: boolean) => {
-    setIsLoggingIn(false)
     onOpenChange(false)
     if (onLoginSuccess) {
       onLoginSuccess(isNewUser)

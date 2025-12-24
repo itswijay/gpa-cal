@@ -5,16 +5,21 @@ interface LoginButtonProps {
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   className?: string
+  onLoginSuccess?: (isNewUser: boolean) => void
 }
 
 export function LoginButton({
   variant = 'outline',
   size = 'default',
   className = '',
+  onLoginSuccess,
 }: LoginButtonProps) {
   const navigate = useNavigate()
 
   const handleClick = () => {
+    if (onLoginSuccess) {
+      onLoginSuccess(false)
+    }
     navigate('/login')
   }
 
@@ -25,9 +30,7 @@ export function LoginButton({
       onClick={handleClick}
       className={className}
     >
-      <span className="flex items-center gap-2">
-        Sign In
-      </span>
+      <span className="flex items-center gap-2">Sign In</span>
     </Button>
   )
 }
