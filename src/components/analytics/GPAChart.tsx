@@ -135,7 +135,12 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
                 borderRadius: '8px',
               }}
               labelStyle={{ color: 'var(--foreground)' }}
-              formatter={(value) => [value.toFixed(3), 'GPA']}
+              formatter={(value) => {
+                if (typeof value === 'number') {
+                  return [value.toFixed(3), 'GPA']
+                }
+                return ['N/A', 'GPA']
+              }}
             />
             <Legend wrapperStyle={{ paddingTop: '20px' }} />
             <Line
