@@ -114,7 +114,10 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await sendPasswordResetEmail(auth, email)
-      toast.success('Password reset email sent! Check your inbox.')
+      toast.success(
+        'Password reset email sent! Please check your inbox and spam folder.',
+        { duration: 10000 } // 10 seconds for better visibility
+      )
       setMode('login')
     } catch (error) {
       const authError = error as AuthError
