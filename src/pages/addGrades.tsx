@@ -379,8 +379,8 @@ function Grades() {
 
             {/* Core Subjects Table */}
             {subjects.length > 0 && (
-              <div className="mt-6 w-full">
-                <h2 className="text-2xl font-semibold mb-6 text-foreground">
+              <div className="mt-10 max-w-4xl mx-auto">
+                <h2 className="text-xl md:text-2xl font-semibold mb-6 text-foreground text-center">
                   Core Subjects
                 </h2>
 
@@ -453,12 +453,12 @@ function Grades() {
 
             {/* Elective Subjects Table */}
             {electives.length > 0 && (
-              <div className="mt-6 w-full">
+              <div className="mt-10 max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-semibold text-foreground">
+                  <h2 className="text-xl md:text-2xl font-semibold text-foreground">
                     Elective Subjects
                   </h2>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs md:text-sm text-muted-foreground">
                     Required Credits: {selectedElectiveCredits}/
                     {electiveCreditsRequired}
                   </div>
@@ -550,7 +550,7 @@ function Grades() {
               </div>
             )}
 
-            <div className="mt-6">
+            <div className="mt-6 flex justify-center">
               <button
                 disabled={!canSave}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
