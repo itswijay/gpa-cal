@@ -402,6 +402,20 @@ const MainPage = () => {
               </div>
             )}
 
+            {/* Analytics Chart */}
+            <AnimatePresence>
+              {showAnalytics && semesters.length > 0 && (
+                <GPAChart
+                  data={semesters.map((s) => ({
+                    semester: s.semester,
+                    gpa: s.gpa,
+                    credits: s.credits,
+                  }))}
+                  onClose={() => setShowAnalytics(false)}
+                />
+              )}
+            </AnimatePresence>
+
             {/* GPA Box */}
             {semesters.length > 0 && (
               <motion.div
