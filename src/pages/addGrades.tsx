@@ -9,12 +9,15 @@ import {
 import { gradeOptions, gradePoints } from '../data/grading'
 import { useNavigate } from 'react-router-dom'
 import CountUp from 'react-countup'
+import toast from 'react-hot-toast'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useAuth } from '../hooks/useAuth'
+import { saveSemesterData } from '../firebase/firestore'
 
 const DEFAULT_FACULTY = 'Select Your Faculty'
 const DEFAULT_DEGREE = 'Select Your Degree Program'
@@ -32,6 +35,8 @@ type GPAEntry = {
 function Grades() {
   const [gpa, setGPA] = useState<number>(0)
   const navigate = useNavigate()
+  const { user, isAuthenticated } = useAuth()
+  const [isSaving, setIsSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editingSemesterData, setEditingSemesterData] =
     useState<GPAEntry | null>(null)
@@ -45,7 +50,7 @@ function Grades() {
   const [electiveCreditsRequired, setElectiveCreditsRequired] = useState(0)
   const [selectedElectiveCredits, setSelectedElectiveCredits] = useState(0)
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (semSelected === DEFAULT_SEMESTER) {
       alert('Please select a semester.')
       return
@@ -65,26 +70,44 @@ function Grades() {
       degree: degreeSelected,
     }
 
-    const existingData = JSON.parse(
-      localStorage.getItem('gpaData') || '[]'
-    ) as GPAEntry[]
-    const updatedData = [
-      ...existingData.filter((entry) => entry.semester !== semSelected),
-      newEntry,
-    ]
+    setIsSaving(true)
+    try {
+      if (isAuthenticated && user) {
+        // Save to Firebase
+        await saveSemesterData(user.uid, newEntry)
+        const successMessage = isEditing
+          ? `${semSelected} grades updated successfully!`
+          : 'Your grades successfully saved!'
+        toast.success(successMessage)
+      } else {
+        // Save to localStorage
+        const existingData = JSON.parse(
+          localStorage.getItem('gpaData') || '[]'
+        ) as GPAEntry[]
+        const updatedData = [
+          ...existingData.filter((entry) => entry.semester !== semSelected),
+          newEntry,
+        ]
 
-    localStorage.setItem('gpaData', JSON.stringify(updatedData))
-    localStorage.setItem('lockedFaculty', facultySelected)
-    localStorage.setItem('lockedDegree', degreeSelected)
+        localStorage.setItem('gpaData', JSON.stringify(updatedData))
+        localStorage.setItem('lockedFaculty', facultySelected)
+        localStorage.setItem('lockedDegree', degreeSelected)
 
-    const successMessage = isEditing
-      ? `${semSelected} grades updated successfully!`
-      : 'Your grades successfully saved!'
-    localStorage.setItem('showToast', successMessage)
+        const successMessage = isEditing
+          ? `${semSelected} grades updated successfully!`
+          : 'Your grades successfully saved!'
+        localStorage.setItem('showToast', successMessage)
+      }
 
-    // Clean up editing data
-    localStorage.removeItem('editingSemester')
-    navigate('/')
+      // Clean up editing data
+      localStorage.removeItem('editingSemester')
+      navigate('/')
+    } catch (error) {
+      console.error('Error saving grades:', error)
+      toast.error('Failed to save grades. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   useEffect(() => {
@@ -552,11 +575,20 @@ function Grades() {
 
             <div className="mt-6 flex justify-center">
               <button
-                disabled={!canSave}
+                disabled={!canSave || isSaving}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleSave}
               >
-                {isEditing ? 'Update Semester' : 'Save Semester'}
+                {isSaving ? (
+                  <>
+                    <span className="inline-block animate-spin mr-2">⏳</span>
+                    Saving...
+                  </>
+                ) : isEditing ? (
+                  'Update Semester'
+                ) : (
+                  'Save Semester'
+                )}
               </button>
             </div>
           </div>
