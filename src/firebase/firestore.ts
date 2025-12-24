@@ -149,3 +149,147 @@ export async function userHasData(userId: string): Promise<boolean> {
   const snapshot = await getDocs(semestersRef)
   return !snapshot.empty
 }
+
+// Data Import/Export Operations
+export interface ImportValidation {
+  isValid: boolean
+  errors: string[]
+  data?: GPAEntry[]
+}
+
+/**
+ * Validate imported JSON data structure
+ */
+export function validateImportData(data: unknown): ImportValidation {
+  const errors: string[] = []
+
+  // Check if data is an array
+  if (!Array.isArray(data)) {
+    errors.push('Imported data must be an array of semester records')
+    return { isValid: false, errors }
+  }
+
+  if (data.length === 0) {
+    errors.push('Imported data is empty')
+    return { isValid: false, errors }
+  }
+
+  const validEntries: GPAEntry[] = []
+  const semesters = new Set<string>()
+
+  data.forEach((entry, index) => {
+    // Check required fields
+    if (!entry.semester) {
+      errors.push(`Record ${index + 1}: Missing semester field`)
+      return
+    }
+    if (typeof entry.gpa !== 'number' || entry.gpa < 0 || entry.gpa > 4) {
+      errors.push(
+        `Record ${index + 1}: Invalid GPA (must be a number between 0 and 4)`
+      )
+      return
+    }
+    if (typeof entry.credits !== 'number' || entry.credits <= 0) {
+      errors.push(
+        `Record ${index + 1}: Invalid credits (must be a positive number)`
+      )
+      return
+    }
+
+    // Check for duplicate semesters
+    if (semesters.has(entry.semester)) {
+      errors.push(`Record ${index + 1}: Duplicate semester "${entry.semester}"`)
+      return
+    }
+
+    semesters.add(entry.semester)
+
+    // Validate grades if present
+    if (entry.grades && typeof entry.grades !== 'object') {
+      errors.push(`Record ${index + 1}: Invalid grades format`)
+      return
+    }
+
+    validEntries.push({
+      semester: entry.semester,
+      gpa: entry.gpa,
+      credits: entry.credits,
+      grades: entry.grades || {},
+      faculty: entry.faculty || undefined,
+      degree: entry.degree || undefined,
+    })
+  })
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    data: validEntries,
+  }
+}
+
+/**
+ * Import JSON data to localStorage
+ */
+export function importDataToLocalStorage(
+  data: GPAEntry[],
+  merge: boolean = false
+): void {
+  if (merge) {
+    // Merge with existing data
+    const existingData = JSON.parse(
+      localStorage.getItem('gpaData') || '[]'
+    ) as GPAEntry[]
+    const semesterMap = new Map(
+      existingData.map((entry) => [entry.semester, entry])
+    )
+
+    // Add/update imported data
+    data.forEach((entry) => {
+      semesterMap.set(entry.semester, entry)
+    })
+
+    localStorage.setItem(
+      'gpaData',
+      JSON.stringify(Array.from(semesterMap.values()))
+    )
+  } else {
+    // Replace existing data
+    localStorage.setItem('gpaData', JSON.stringify(data))
+  }
+}
+
+/**
+ * Import JSON data to Firestore
+ */
+export async function importDataToFirestore(
+  userId: string,
+  data: GPAEntry[],
+  merge: boolean = false
+): Promise<void> {
+  if (!merge) {
+    // Delete existing data first
+    const existingData = await getSemesterData(userId)
+    const deletePromises = existingData.map((entry) =>
+      deleteSemesterData(userId, entry.semester)
+    )
+    await Promise.all(deletePromises)
+  }
+
+  // Import new data
+  await migrateLocalDataToFirestore(userId, data)
+}
+
+/**
+ * Export localStorage data as JSON object
+ */
+export function exportLocalStorageData(): GPAEntry[] {
+  const data = localStorage.getItem('gpaData')
+  return data ? JSON.parse(data) : []
+}
+
+/**
+ * Export Firestore data as JSON object
+ */
+export async function exportFirestoreData(userId: string): Promise<GPAEntry[]> {
+  return await getSemesterData(userId)
+}
