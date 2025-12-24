@@ -56,11 +56,11 @@ export function UserAvatar({
             <img
               src={user.photoURL}
               alt={user.displayName || 'User avatar'}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-10 w-10 flex-shrink-0 rounded-full object-cover"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <User className="h-5 w-5" />
             </div>
           )}
