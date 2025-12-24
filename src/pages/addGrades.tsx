@@ -1,6 +1,6 @@
 import { Button } from '../components/ui/button'
 import { ChevronDown, ArrowLeft } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   subjectData,
   type Subject,
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '../hooks/useAuth'
+import { useFirebaseData } from '../hooks/useFirebaseData'
 import { saveSemesterData } from '../firebase/firestore'
 
 const DEFAULT_FACULTY = 'Select Your Faculty'
@@ -36,6 +37,7 @@ function Grades() {
   const [gpa, setGPA] = useState<number>(0)
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuth()
+  const { data: firebaseData } = useFirebaseData()
   const [isSaving, setIsSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editingSemesterData, setEditingSemesterData] =
@@ -161,7 +163,18 @@ function Grades() {
 
       if (savedSelections.semester) setSemSelected(savedSelections.semester)
     }
-  }, [])
+
+    // For authenticated users, check Firebase data for first semester to lock faculty/degree
+    if (isAuthenticated && firebaseData.length > 0) {
+      const firstSemester = firebaseData[0]
+      if (firstSemester.faculty && !isEditing) {
+        setFacultySelected(firstSemester.faculty)
+      }
+      if (firstSemester.degree && !isEditing) {
+        setDegreeSelected(firstSemester.degree)
+      }
+    }
+  }, [isAuthenticated, firebaseData, isEditing])
 
   const savedSemesters = JSON.parse(
     localStorage.getItem('gpaData') || '[]'
@@ -171,7 +184,18 @@ function Grades() {
     subjects: number
   }[]
 
-  const usedSemesters = savedSemesters.map((entry) => entry.semester)
+  // For authenticated users, combine localStorage and Firebase semesters
+  const usedSemesters = useMemo(() => {
+    const firebaseSemesters = isAuthenticated
+      ? firebaseData.map((entry) => entry.semester)
+      : []
+    return [
+      ...new Set([
+        ...savedSemesters.map((entry) => entry.semester),
+        ...firebaseSemesters,
+      ]),
+    ]
+  }, [isAuthenticated, firebaseData, savedSemesters])
 
   useEffect(() => {
     if (usedSemesters.includes(semSelected) && !isEditing) {
@@ -315,7 +339,8 @@ function Grades() {
                       className="w-full justify-between bg-muted border-border hover:bg-accent text-muted-foreground"
                       disabled={
                         Boolean(localStorage.getItem('lockedFaculty')) ||
-                        isEditing
+                        isEditing ||
+                        (isAuthenticated && firebaseData.length > 0)
                       }
                     >
                       <span className="truncate">{facultySelected}</span>
@@ -349,7 +374,8 @@ function Grades() {
                         facultySelected === DEFAULT_FACULTY ||
                         Boolean(localStorage.getItem('lockedDegree')) ||
                         facultySelected === 'Select Your Faculty' ||
-                        isEditing
+                        isEditing ||
+                        (isAuthenticated && firebaseData.length > 0)
                       }
                     >
                       <span className="truncate">{degreeSelected}</span>
