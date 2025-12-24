@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CloudUpload, Trash2, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import {
   Dialog,
   DialogContent,
@@ -65,8 +66,10 @@ export function MigrationDialog({
       if (onMigrationComplete) {
         onMigrationComplete()
       }
+      toast.success('Data imported successfully!')
     } catch (error) {
       console.error('Migration failed:', error)
+      toast.error('Failed to import data. Please try again.')
     } finally {
       setIsImporting(false)
     }
@@ -88,14 +91,16 @@ export function MigrationDialog({
       localStorage.removeItem('gpaData')
       localStorage.removeItem('lockedFaculty')
       localStorage.removeItem('lockedDegree')
-      localStorage.removeItem('gpaSelections')
-
       onOpenChange(false)
       if (onMigrationComplete) {
         onMigrationComplete()
       }
+      toast.success('Account created successfully!')
     } catch (error) {
       console.error('Failed to create profile:', error)
+      toast.error('Failed to set up account. Please try again.')
+    } finally {
+      setIsClearing(false)
     } finally {
       setIsClearing(false)
     }
