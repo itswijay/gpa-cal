@@ -1,6 +1,6 @@
-# 🎓 GPA Calculator Web App
+# GPA Cal
 
-A clean and user-friendly GPA calculator that simplifies the process of tracking academic progress — no backend, no login, just a smooth in-browser experience.
+A comprehensive, clean and user-friendly GPA calculation and tracking application designed for academic institutions. The platform provides students with tools to manage their academic progress, calculate semester and cumulative GPAs, and track performance across multiple degree programs and faculties.
 
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
 
@@ -36,206 +36,311 @@ A clean and user-friendly GPA calculator that simplifies the process of tracking
 
 ---
 
-## ✨ Features
+## Features
 
-- 📚 **Pre-filled subjects and credit values** for supported faculties and degree programs
-- 🎯 **Select your faculty, degree, and semester** — and only enter your grades
-- ⚡ **Instant GPA calculation** (semester-wise and cumulative)
-- 🔒 **No user account required** — data is saved locally in the browser
-- 📱 **Responsive UI** built with a focus on accessibility and ease of use
-- ✏️ **Edit functionality** - Edit previously entered semesters with full grade history
-- 🌙 **Dark/Light theme** support with system preference detection
-- 📊 **Animated transitions** and smooth user interactions
-- 🔄 **Backward compatibility** for legacy data formats
-- 💾 **Robust data persistence** with localStorage backup and recovery
-
----
-
-## 🆕 Recent Updates
-
-### v2.0 - Enhanced Edit Functionality
-
-- ✅ **Full edit support**: Edit any previously entered semester
-- ✅ **Grade preservation**: All grades are saved and restored during editing
-- ✅ **Legacy data handling**: Graceful migration for old data formats
-- ✅ **Visual indicators**: Clear UI feedback for editable vs non-editable data
-- ✅ **Improved UX**: Better error handling and user messaging
-
-### Performance & Architecture
-
-- ✅ **TypeScript strict mode**: Enhanced type safety
-- ✅ **Code splitting**: Optimized bundle size with chunk splitting
-- ✅ **Error boundaries**: Robust error handling and recovery
-- ✅ **Accessibility**: ARIA labels and keyboard navigation
+- **Multi-Faculty Support**: Pre-configured curriculum for multiple faculties and degree programs
+- **Pre-filled Subject Data**: Automatically populated subjects and credit values for each degree program and semester
+- **Real-time GPA Calculation**: Instant calculation of semester-wise and cumulative GPA with animated counter display
+- **Flexible Data Storage**: Dual persistence with local browser storage and optional Firebase cloud synchronization
+- **User Authentication**: Optional Google authentication for cloud data backup and access across devices
+- **Grade Management**: Full edit and update capability for previously entered grades and semesters with complete grade history preservation
+- **Analytics Dashboard**: Visual GPA progress tracking with interactive charts and performance trends
+- **Responsive Design**: Mobile-first interface optimized for all device sizes and screen orientations
+- **Theme Support**: Light and dark mode with automatic system preference detection
+- **Data Import**: Ability to import from JSON files for data portability
+- **Accessibility**: Full ARIA compliance and keyboard navigation support
+- **Legacy Data Migration**: Automatic conversion and compatibility for older data formats
 
 ---
 
-## 🔧 Tech Stack
+## Recent Updates
 
-- **Frontend**: React 19, TypeScript, Vite
-- **Styling**: Tailwind CSS, shadcn/ui components
-- **Animations**: Framer Motion, React CountUp
-- **Routing**: React Router DOM v7
-- **State Management**: React hooks with localStorage persistence
-- **Build**: Vite with code splitting and optimization
-- **Deployment**: Vercel with SPA routing support
+### Version 3.0 - Cloud Integration and Enhanced Analytics
+
+- Firebase Firestore integration for cloud-based data synchronization
+- Real-time data loading and persistence across browser sessions and devices
+- Analytics infrastructure with GPA progress visualization
+- Enhanced migration system for data format updates
+- Improved error handling and user feedback system
+- Clean UI and better UX
+
+### Performance and Architecture Improvements
+
+- TypeScript strict mode enforcement for enhanced type safety
+- Code splitting and lazy loading for optimized bundle size
+- Page transition animations and smooth user experience
+- Comprehensive error handling and recovery mechanisms
+- Accessibility compliance with ARIA standards and keyboard navigation
 
 ---
 
-## 🚀 Getting Started
+## Technology Stack
+
+- **Runtime and Build**: React 19, TypeScript, Vite
+- **Styling and Components**: Tailwind CSS, shadcn/ui component library, Lucide React icons
+- **State Management**: React hooks with localStorage for client-side persistence and React Context for theme management
+- **Backend Integration**: Firebase Authentication (Google OAuth), Firestore for cloud data synchronization
+- **Animations and Interactions**: Framer Motion for page transitions, React CountUp for numeric animations, Recharts for data visualization
+- **Routing**: React Router DOM v7 with SPA support
+- **Build Optimization**: Vite with code splitting by dependency (vendor, animations, UI, router, utilities)
+- **Deployment and Analytics**: Vercel hosting with Vercel Analytics integration
+- **Development Tools**: ESLint for code quality, TypeScript strict mode for type safety
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 18 or higher
+- npm or yarn package manager
+- Git for version control
 
-### Installation
+### Installation and Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/thewijay/gpa-cal.git
+git clone https://github.com/itswijay/gpa-cal.git
 cd gpa-cal
 
-# Install dependencies
+# Install project dependencies
 npm install
 
-# Start development server
+# Start the development server with network access
 npm run dev
 
-# Build for production
+# Build for production deployment
 npm run build
 
-# Preview production build
+# Preview the production build locally
 npm run preview
 ```
 
-### Development
+### Development Workflow
 
 ```bash
-# Run with host access (for mobile testing)
+# Run development server with host access (for mobile device testing)
 npm run dev -- --host
 
-# Lint code
+# Execute linting checks
 npm run lint
 
-# Type checking
+# Perform type checking without compilation
 npx tsc --noEmit
 ```
 
----
+### Environment Configuration
 
-## 📱 Usage Guide
+Create a `.env.local` file in the project root with Firebase configuration:
 
-### Adding Your First Semester
+```env
+VITE_FIREBASE_API_KEY=api_key
+VITE_FIREBASE_AUTH_DOMAIN=auth_domain
+VITE_FIREBASE_PROJECT_ID=project_id
+VITE_FIREBASE_STORAGE_BUCKET=storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=messaging_sender_id
+VITE_FIREBASE_APP_ID=app_id
+```
 
-1. **Select Faculty**: Choose your faculty from the dropdown
-2. **Select Degree**: Pick your degree program
-3. **Select Semester**: Choose the semester you want to add
-4. **Enter Grades**: Select grades for each subject
-5. **Choose Electives**: Pick electives if required
-6. **Save**: Your GPA is calculated and saved automatically
-
-### Editing Existing Semesters
-
-1. **Navigate to Main Page**: View your GPA summary
-2. **Click Edit Button**: Click the edit icon next to any semester
-3. **Modify Grades**: Update any grades as needed
-4. **Save Changes**: Your updated GPA will be recalculated
-
-### Data Management
-
-- **Export Data**: Use browser developer tools to backup localStorage
-- **Clear All Data**: Use the "Clear All Data" button (with confirmation)
-- **Theme Toggle**: Switch between light and dark themes
+Refer to `.env.example` for the complete template.
 
 ---
 
-## 🏗️ Architecture Overview
+## Usage Guide
+
+### Adding a New Semester
+
+1. Navigate to the grade entry page
+2. Select your faculty from the dropdown menu
+3. Choose your degree program
+4. Select the semester to add
+5. Enter grades for each subject
+6. Select elective courses if applicable
+7. Submit to save and automatically calculate GPA
+
+### Managing Existing Semesters
+
+1. View your GPA summary on the main page
+2. Locate the semester you wish to modify
+3. Click the edit button next to the semester entry
+4. Update grades as needed
+5. Save changes to recalculate cumulative GPA
+
+### Data Management Options
+
+- **Local Storage**: Data persists automatically in your browser
+- **Cloud Backup**: Sign in with Google to sync data across devices using Firebase
+- **Export Records**: Access browser developer tools to backup localStorage data
+- **Clear All Data**: Use the clear button with confirmation to remove all stored information
+- **Import Data**: Load previously exported JSON records to restore academic history
+
+### Theme Customization
+
+- Toggle between light and dark themes using the theme button
+- System preference detection automatically applies your device settings
+- Your theme selection is remembered across sessions
+
+---
+
+## Architecture Overview
 
 ### Project Structure
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── ui/             # shadcn/ui components
-│   └── theme-provider.tsx
-├── data/               # Static data and types
-│   ├── subjects/       # Modular subject data by faculty
-│   │   ├── index.ts    # Combines all faculty data
-│   │   ├── computing.ts         # Computing faculty subjects
-│   │   ├── appliedSciences.ts   # Applied Sciences subjects
-│   │   └── managementStudies.ts # Management Studies subjects
-│   ├── types.ts        # TypeScript type definitions
-│   └── grading.ts      # Grade options and point mappings
-├── pages/              # Route components
-│   ├── MainPage.tsx    # GPA summary and management
-│   └── addGrades.tsx   # Grade entry and editing
-└── lib/                # Configuration
-    └── utils.ts        # Tailwind utilities
+├── components/              # Reusable UI components
+│   ├── ui/                 # shadcn/ui component library
+│   ├── auth/               # Authentication-related components
+│   ├── analytics/          # Analytics and charting components
+│   ├── theme-provider.tsx  # Theme context and provider
+│   ├── HowToUseDialog.tsx  # User guidance component
+│   └── [other components]
+├── pages/                  # Route-level page components
+│   ├── MainPage.tsx        # GPA summary dashboard
+│   ├── addGrades.tsx       # Grade entry and editing interface
+│   └── LoginPage.tsx       # Authentication page
+├── contexts/               # React context providers
+│   └── AuthContext.tsx     # Authentication state management
+├── hooks/                  # Custom React hooks
+│   ├── useAuth.ts          # Authentication hook
+│   ├── useFirebaseData.ts  # Firebase data synchronization
+│   ├── useFileImport.ts    # File import utilities
+│   └── [other hooks]
+├── firebase/               # Firebase configuration and utilities
+│   ├── config.ts           # Firebase initialization
+│   └── firestore.ts        # Firestore database operations
+├── data/                   # Static data and configuration
+│   ├── subjects/           # Modular curriculum by faculty
+│   │   ├── computing.ts
+│   │   ├── appliedSciences.ts
+│   │   ├── managementStudies.ts
+│   │   ├── agriculturalSciences.ts
+│   │   └── index.ts
+│   ├── types.ts            # TypeScript type definitions
+│   └── grading.ts          # Grade to point mapping system
+├── lib/                    # Utility functions
+│   └── utils.ts
+├── App.tsx                 # Main application component
+├── main.tsx                # Application entry point
+└── index.css               # Global styles
 ```
 
-### Data Flow
+### Data Flow Architecture
 
-1. **Subject Data**: Modular data loaded from `data/subjects/index.ts`
-2. **Grade Entry**: User input collected in `addGrades.tsx`
-3. **GPA Calculation**: Real-time calculation with validation
-4. **Persistence**: Data saved to localStorage with versioning
-5. **Display**: Summary shown in `MainPage.tsx` with animations
+1. **Data Retrieval**: Subject curriculum loaded from modular data files
+2. **User Input**: Grade selection captured in addGrades page component
+3. **Calculation Engine**: Real-time GPA calculation with validation
+4. **Local Persistence**: Data stored in browser localStorage with versioning
+5. **Cloud Synchronization**: Optional Firebase Firestore sync for authenticated users
+6. **Display Layer**: Summary visualization with animations in MainPage
+7. **Analytics**: Historical data aggregation and trend analysis
 
-### State Management
+### State Management Strategy
 
-- **Local State**: React hooks for component state
-- **Persistent State**: localStorage for data persistence
-- **Theme State**: Context provider for theme management
-- **Navigation State**: React Router for SPA routing
-
----
-
-## 🔧 Configuration
-
-### Customizing Grades
-
-Modify `src/data/grading.ts` for different grading systems. This file contains both grade options and their corresponding point values.
+- **Component State**: React hooks (useState, useEffect) for local component state
+- **Persistent State**: localStorage for offline-first architecture
+- **Theme State**: Context API for global theme management
+- **Authentication State**: Custom useAuth hook with Firebase integration
+- **Remote State**: useFirebaseData hook for cloud data synchronization
+- **Router State**: React Router for navigation state management
 
 ---
 
-## 🚀 Deployment
+## Customization Guide
 
-### Vercel (Recommended)
+### Adding New Grading Systems
+
+Edit `src/data/grading.ts` to customize grade options and their point values. The file contains:
+
+```typescript
+{
+  grade: 'A+',
+  point: 4.0,
+  percentage: '90-100'
+}
+```
+
+### Extending Faculty and Degree Programs
+
+Add new faculty data to `src/data/subjects/` directory following the existing structure:
+
+1. Create a new TypeScript file (e.g., `newFaculty.ts`)
+2. Define subjects with semester organization
+3. Export from `src/data/subjects/index.ts`
+4. Update `subjectData` object to include new faculty
+
+Refer to existing faculty files for data structure specifications.
+
+---
+
+## Deployment
+
+### Deploy to Vercel (Recommended)
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Install Vercel CLI globally
+npm install -g vercel
 
-# Deploy
+# Deploy to staging environment
 vercel
 
-# Production deployment
+# Deploy to production
 vercel --prod
 ```
 
-### Manual Deployment
+The application includes `vercel.json` configuration for proper SPA routing.
+
+### Manual Deployment to Other Platforms
 
 ```bash
-# Build the project
+# Build the application
 npm run build
 
-# Upload the dist/ folder to your hosting service
+# Upload the contents of the dist/ directory to your hosting provider
 ```
 
-The app includes `vercel.json` for proper SPA routing support.
+---
+
+## Contributing
+
+We welcome contributions to improve GPA Calculator. Please review our [Contributing Guidelines](./CONTRIBUTING.md) for detailed information on:
+
+- Adding new faculties and degree programs
+- Development environment setup
+- Code standards and best practices
+- Testing requirements
+- Pull request procedures
+
+### Quick Start for Contributors
+
+1. Fork the repository on GitHub
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Make changes and test thoroughly
+4. Commit with descriptive messages: `git commit -m "feat: description of changes"`
+5. Push to your fork: `git push origin feature/your-feature-name`
+6. Open a Pull Request with a clear description
 
 ---
 
-## 🤝 Contributing
+## Support and Resources
 
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for detailed information on adding new faculties, development setup, and best practices.
-
-### Quick Start
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes and test thoroughly
-4. Submit a Pull Request
+- Review the [Contributing Guide](./CONTRIBUTING.md) for detailed development documentation
+- Check [Testing Guide](./TESTING.md) for quality assurance procedures
+- Visit the [GitHub Repository](https://github.com/itswijay/gpa-cal) for issue tracking
+- Review commit history for implementation details and feature evolution
 
 ---
+
+## License
+
+This project is maintained by the GPA Calculator community. For license information, please refer to the repository.
+
+---
+
+## Project Status
+
+**Current Version**: 3.0  
+**Development Status**: Active  
+**Last Updated**: December 2025
+
+This application is actively maintained with regular feature updates and bug fixes. The development roadmap includes additional faculty integrations, enhanced analytics capabilities, and expanded institutional support.
