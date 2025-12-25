@@ -269,7 +269,7 @@ const MainPage = () => {
             <div className="flex-1 flex justify-end items-center gap-2">
               {/* GitHub Button - Hidden on mobile */}
               <a
-                href="https://github.com/thewijay/gpa-cal"
+                href="https://github.com/itswijay/gpa-cal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden sm:block p-3 rounded-full hover:bg-accent transition-colors duration-200"
@@ -441,7 +441,7 @@ const MainPage = () => {
       {/* GitHub Button - Mobile only, above footer */}
       <div className="sm:hidden w-full flex justify-center py-2">
         <a
-          href="https://github.com/thewijay/gpa-cal"
+          href="https://github.com/itswijay/gpa-cal"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
