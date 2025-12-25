@@ -25,7 +25,7 @@ interface HowToUseDialogProps {
 const steps = [
   {
     icon: GraduationCap,
-    title: 'Welcome to GPA Calculator',
+    title: 'Welcome to GPA Cal',
     description:
       'This app helps you track your academic performance across semesters. Calculate your GPA easily and monitor your progress over time.',
     tips: [
