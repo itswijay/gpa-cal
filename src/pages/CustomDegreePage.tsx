@@ -291,7 +291,7 @@ export default function CustomDegreePage() {
                 </Label>
                 <Input
                   id="degreeName"
-                  placeholder="e.g., BSc in Cybersecurity, BCom in Accounting"
+                  placeholder="e.g. BSc in Computer Science"
                   value={degreeName}
                   onChange={(e) => setDegreeName(e.target.value)}
                   className="bg-muted/50 border-border max-w-xl h-11"
@@ -334,9 +334,87 @@ export default function CustomDegreePage() {
                       </Button>
                     </div>
 
-                    {/* Subjects Grid Table */}
-                    <div className="p-6">
-                      <div className="w-full overflow-x-auto">
+                    {/* Subjects Grid Table (Desktop) & Card List (Mobile) */}
+                    <div className="p-4 sm:p-6">
+                      {/* Mobile View: Dynamic Input Cards */}
+                      <div className="block sm:hidden space-y-4">
+                        {sem.subjects.map((sub, subIdx) => (
+                          <div
+                            key={subIdx}
+                            className="relative p-4 rounded-lg border border-border bg-muted/20 space-y-3"
+                          >
+                            <div className="absolute top-2 right-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveSubject(sem.id, subIdx)}
+                                disabled={isSaving}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-8 w-8 rounded-lg"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 pr-8">
+                              <div className="col-span-2 space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase font-bold">
+                                  Subject Code
+                                </Label>
+                                <Input
+                                  placeholder="e.g. CYB101"
+                                  value={sub.code}
+                                  onChange={(e) =>
+                                    handleSubjectChange(sem.id, subIdx, 'code', e.target.value)
+                                  }
+                                  className="bg-muted/40 border-border font-mono uppercase h-9 text-xs"
+                                  disabled={isSaving}
+                                  maxLength={15}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase font-bold">
+                                  Credits
+                                </Label>
+                                <select
+                                  value={sub.credits}
+                                  onChange={(e) =>
+                                    handleSubjectChange(sem.id, subIdx, 'credits', e.target.value)
+                                  }
+                                  className="flex h-9 w-full rounded-md border border-border bg-muted/40 px-2 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-semibold"
+                                  disabled={isSaving}
+                                >
+                                  <option value="1">1</option>
+                                  <option value="2">2</option>
+                                  <option value="3">3</option>
+                                  <option value="4">4</option>
+                                  <option value="5">5</option>
+                                  <option value="6">6</option>
+                                  <option value="8">8</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-muted-foreground uppercase font-bold">
+                                Subject Name
+                              </Label>
+                              <Input
+                                placeholder="e.g. Introduction to Security"
+                                value={sub.name}
+                                onChange={(e) =>
+                                  handleSubjectChange(sem.id, subIdx, 'name', e.target.value)
+                                }
+                                className="bg-muted/40 border-border h-9 text-xs"
+                                disabled={isSaving}
+                                maxLength={80}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Desktop View: Clean Table Layout */}
+                      <div className="hidden sm:block w-full overflow-x-auto">
                         <table className="min-w-full text-left text-sm border-collapse">
                           <thead>
                             <tr className="border-b border-border text-muted-foreground font-semibold">
