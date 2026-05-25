@@ -20,6 +20,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useFirebaseData } from '../hooks/useFirebaseData'
 import { saveSemesterData, getCustomDegree, type CustomDegreeData } from '../firebase/firestore'
 import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
+import { CustomDegreeConflictDialog } from '../components/auth/CustomDegreeConflictDialog'
 
 const DEFAULT_FACULTY = 'Select Your Faculty'
 const DEFAULT_DEGREE = 'Select Your Degree Program'
@@ -41,12 +42,24 @@ function Grades() {
   const { data: firebaseData } = useFirebaseData()
   const [isSaving, setIsSaving] = useState(false)
   const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const [showConflictDialog, setShowConflictDialog] = useState(false)
 
   const handleCustomDegreeClick = () => {
     if (!isAuthenticated) {
       setShowAuthDialog(true)
       return
     }
+
+    // Check if the user already has saved semesters under preloaded faculties
+    const hasPreloadedData =
+      firebaseData.length > 0 &&
+      firebaseData.some((entry) => entry.faculty && entry.faculty !== 'Custom Degree')
+
+    if (hasPreloadedData) {
+      setShowConflictDialog(true)
+      return
+    }
+
     navigate('/custom-degree')
   }
   const [isEditing, setIsEditing] = useState(false)
@@ -377,12 +390,12 @@ function Grades() {
 
               <Button
                 variant="outline"
-                className="absolute right-0 border-primary/40 hover:border-primary hover:bg-primary/5 text-primary bg-card transition-all font-semibold text-xs sm:text-sm gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-sm animate-pulse-subtle"
+                className="absolute right-0 border-primary/40 hover:border-primary hover:bg-primary/5 text-primary bg-card transition-all font-semibold rounded-lg shadow-sm h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-4 sm:py-2 gap-2 text-xs sm:text-sm flex items-center justify-center animate-pulse-subtle"
                 onClick={handleCustomDegreeClick}
+                title="Create Custom Degree"
               >
-                <GraduationCap className="h-4 w-4" />
+                <GraduationCap className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Create Custom Degree</span>
-                <span className="sm:hidden">Custom Degree</span>
               </Button>
             </div>
 
@@ -685,6 +698,7 @@ function Grades() {
       </footer>
 
       <CustomDegreeAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+      <CustomDegreeConflictDialog open={showConflictDialog} onOpenChange={setShowConflictDialog} />
     </div>
   )
 }
