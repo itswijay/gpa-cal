@@ -305,6 +305,7 @@ function Grades() {
     semSelected,
     isEditing,
     editingSemesterData,
+    combinedSubjectData,
   ])
 
   // Separate useEffect to handle loading grades when editingSemesterData changes

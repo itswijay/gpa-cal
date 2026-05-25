@@ -59,7 +59,7 @@ export function CustomDegreeConflictDialog({
             className="w-full font-semibold"
             onClick={handleGoToDashboard}
           >
-            Go to Dashboard to Clear Data
+            Go to Dashboard
           </Button>
           <Button
             variant="ghost"

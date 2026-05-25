@@ -18,7 +18,7 @@ import type { SemesterMap } from '../data/types'
 export interface CustomDegreeData {
   degreeName: string
   semesters: SemesterMap
-  updatedAt?: any
+  updatedAt?: unknown
 }
 export interface GPAEntry {
   id?: string

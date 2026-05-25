@@ -112,13 +112,29 @@ const MainPage = () => {
     return semCount === 0 ? 0 : parseFloat((totalGPA / semCount).toFixed(3))
   }
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all GPA data?')) {
+      // Clear local storage entries
       localStorage.removeItem('gpaData')
       localStorage.removeItem('lockedFaculty')
       localStorage.removeItem('lockedDegree')
       localStorage.removeItem('gpaSelections')
       setSemesters([])
+
+      if (isAuthenticated && user) {
+        try {
+          const deletePromises = firebaseData.map((entry) =>
+            deleteSemesterData(user.uid, entry.semester)
+          )
+          await Promise.all(deletePromises)
+          toast.success('All semester data successfully cleared from cloud!')
+        } catch (error) {
+          console.error('Error clearing cloud semester data:', error)
+          toast.error('Failed to clear cloud data. Please try again.')
+        }
+      } else {
+        toast.success('All local semester data successfully cleared!')
+      }
     }
   }
 

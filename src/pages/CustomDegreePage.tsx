@@ -307,7 +307,7 @@ export default function CustomDegreePage() {
             {/* Dynamic Semesters Card List */}
             <div className="space-y-6 mb-8">
               <AnimatePresence initial={false}>
-                {semesters.map((sem, semIdx) => (
+                {semesters.map((sem) => (
                   <motion.div
                     key={sem.id}
                     initial={{ opacity: 0, scale: 0.95, y: 15 }}
