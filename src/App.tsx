@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import MainPage from './pages/MainPage'
 import Grades from './pages/addGrades'
 import LoginPage from './pages/LoginPage'
+import CustomDegreePage from './pages/CustomDegreePage'
 import { Toaster } from 'react-hot-toast'
 import { inject } from '@vercel/analytics'
 
@@ -67,6 +68,20 @@ function AnimatedRoutes() {
                 transition={{ duration: 0.5 }}
               >
                 <LoginPage />
+              </motion.div>
+            }
+          />
+          <Route
+            path="/custom-degree"
+            element={
+              <motion.div
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.6 }}
+              >
+                <CustomDegreePage />
               </motion.div>
             }
           />
