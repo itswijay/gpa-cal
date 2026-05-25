@@ -12,8 +12,14 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from './config'
+import type { SemesterMap } from '../data/types'
 
 // Types
+export interface CustomDegreeData {
+  degreeName: string
+  semesters: SemesterMap
+  updatedAt?: any
+}
 export interface GPAEntry {
   id?: string
   semester: string
@@ -243,4 +249,34 @@ export async function importDataToFirestore(
 
   // Import new data
   await migrateLocalDataToFirestore(userId, data)
+}
+
+// Custom Degree Operations
+/**
+ * Save user's custom degree curriculum to Firestore
+ */
+export async function saveCustomDegree(
+  userId: string,
+  data: CustomDegreeData
+): Promise<void> {
+  const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  await setDoc(customDegreeRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/**
+ * Retrieve user's custom degree curriculum from Firestore
+ */
+export async function getCustomDegree(
+  userId: string
+): Promise<CustomDegreeData | null> {
+  const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  const snapshot = await getDoc(customDegreeRef)
+
+  if (snapshot.exists()) {
+    return snapshot.data() as CustomDegreeData
+  }
+  return null
 }
