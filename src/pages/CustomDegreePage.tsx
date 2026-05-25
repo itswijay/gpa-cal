@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus, Trash2, Save, GraduationCap, BookOpen, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, GraduationCap, BookOpen, AlertCircle, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -10,6 +10,12 @@ import { useAuth } from '../hooks/useAuth'
 import { saveCustomDegree, getCustomDegree, type CustomDegreeData } from '../firebase/firestore'
 import type { SemesterMap, Subject } from '../data/types'
 import { Spinner } from '../components/ui/spinner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu'
 
 interface DynamicSubject {
   code: string
@@ -265,7 +271,7 @@ export default function CustomDegreePage() {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+              <h1 className="text-xl sm:text-3xl font-bold text-foreground flex items-center gap-2 ml-4 sm:ml-0">
                 <GraduationCap className="h-7 w-7 text-primary" />
                 Custom Degree Creator
               </h1>
@@ -375,22 +381,31 @@ export default function CustomDegreePage() {
                                 <Label className="text-[10px] text-muted-foreground uppercase font-bold">
                                   Credits
                                 </Label>
-                                <select
-                                  value={sub.credits}
-                                  onChange={(e) =>
-                                    handleSubjectChange(sem.id, subIdx, 'credits', e.target.value)
-                                  }
-                                  className="flex h-9 w-full rounded-md border border-border bg-muted/40 px-2 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-semibold"
-                                  disabled={isSaving}
-                                >
-                                  <option value="1">1</option>
-                                  <option value="2">2</option>
-                                  <option value="3">3</option>
-                                  <option value="4">4</option>
-                                  <option value="5">5</option>
-                                  <option value="6">6</option>
-                                  <option value="8">8</option>
-                                </select>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full justify-between bg-muted/40 border-border hover:bg-accent text-foreground font-semibold h-9 text-xs px-2 py-1"
+                                      disabled={isSaving}
+                                    >
+                                      <span>{sub.credits}</span>
+                                      <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="bg-card border-border min-w-[60px]">
+                                    {['1', '2', '3', '4', '5', '6', '8'].map((creditVal) => (
+                                      <DropdownMenuItem
+                                        key={creditVal}
+                                        onSelect={() =>
+                                          handleSubjectChange(sem.id, subIdx, 'credits', creditVal)
+                                        }
+                                        className="hover:bg-accent focus:bg-accent text-center justify-center font-semibold cursor-pointer py-1"
+                                      >
+                                        {creditVal}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </div>
 
@@ -452,22 +467,31 @@ export default function CustomDegreePage() {
                                   />
                                 </td>
                                 <td className="py-3 pr-4">
-                                  <select
-                                    value={sub.credits}
-                                    onChange={(e) =>
-                                      handleSubjectChange(sem.id, subIdx, 'credits', e.target.value)
-                                    }
-                                    className="flex h-10 w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center font-semibold"
-                                    disabled={isSaving}
-                                  >
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="8">8</option>
-                                  </select>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className="w-full justify-between bg-muted/30 border-border hover:bg-accent text-foreground font-semibold h-10"
+                                        disabled={isSaving}
+                                      >
+                                        <span className="w-full text-center">{sub.credits}</span>
+                                        <ChevronDown className="h-4 w-4 opacity-70 shrink-0" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="bg-card border-border min-w-[80px]">
+                                      {['1', '2', '3', '4', '5', '6', '8'].map((creditVal) => (
+                                        <DropdownMenuItem
+                                          key={creditVal}
+                                          onSelect={() =>
+                                            handleSubjectChange(sem.id, subIdx, 'credits', creditVal)
+                                          }
+                                          className="hover:bg-accent focus:bg-accent text-center justify-center font-semibold cursor-pointer py-1.5"
+                                        >
+                                          {creditVal}
+                                        </DropdownMenuItem>
+                                      ))}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </td>
                                 <td className="py-3 text-center">
                                   <Button
