@@ -1,5 +1,5 @@
 import { Button } from '../components/ui/button'
-import { ChevronDown, ArrowLeft } from 'lucide-react'
+import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   subjectData,
@@ -359,21 +359,31 @@ function Grades() {
         <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
           <div className="container mx-auto px-4 sm:px-6 py-6">
             {/* Header */}
-            <div className="relative flex justify-center items-center mb-8">
-              {isEditing && (
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('editingSemester')
-                    navigate('/')
-                  }}
-                  className="absolute left-0 p-2 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              )}
-              <h1 className="text-3xl font-bold text-foreground">
+            <div className="relative flex justify-center items-center mb-8 w-full">
+              <button
+                onClick={() => {
+                  localStorage.removeItem('editingSemester')
+                  navigate('/')
+                }}
+                className="absolute left-0 p-2 rounded-full border border-border bg-card hover:bg-accent transition-colors duration-200"
+                title="Go back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {isEditing ? `Edit ${semSelected}` : 'GPA Cal'}
               </h1>
+
+              <Button
+                variant="outline"
+                className="absolute right-0 border-primary/40 hover:border-primary hover:bg-primary/5 text-primary bg-card transition-all font-semibold text-xs sm:text-sm gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-sm animate-pulse-subtle"
+                onClick={handleCustomDegreeClick}
+              >
+                <GraduationCap className="h-4 w-4" />
+                <span className="hidden sm:inline">Create Custom Degree</span>
+                <span className="sm:hidden">Custom Degree</span>
+              </Button>
             </div>
 
             {/* Dropdowns */}
@@ -476,16 +486,6 @@ function Grades() {
               </div>
             </div>
 
-            {/* Custom Degree Trigger */}
-            <div className="flex justify-center mb-8 -mt-4">
-              <Button
-                variant="link"
-                className="text-primary hover:underline text-sm font-medium"
-                onClick={handleCustomDegreeClick}
-              >
-                Can't find your degree program? Create a Custom Degree
-              </Button>
-            </div>
 
             {/* Core Subjects Table */}
             {subjects.length > 0 && (
