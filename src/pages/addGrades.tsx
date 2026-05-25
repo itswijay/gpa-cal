@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '../hooks/useAuth'
 import { useFirebaseData } from '../hooks/useFirebaseData'
-import { saveSemesterData } from '../firebase/firestore'
+import { saveSemesterData, getCustomDegree, type CustomDegreeData } from '../firebase/firestore'
+import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
 
 const DEFAULT_FACULTY = 'Select Your Faculty'
 const DEFAULT_DEGREE = 'Select Your Degree Program'
@@ -39,10 +40,55 @@ function Grades() {
   const { user, isAuthenticated } = useAuth()
   const { data: firebaseData } = useFirebaseData()
   const [isSaving, setIsSaving] = useState(false)
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
+
+  const handleCustomDegreeClick = () => {
+    if (!isAuthenticated) {
+      setShowAuthDialog(true)
+      return
+    }
+    navigate('/custom-degree')
+  }
   const [isEditing, setIsEditing] = useState(false)
   const [editingSemesterData, setEditingSemesterData] =
     useState<GPAEntry | null>(null)
-  const facultyOptions = Object.keys(subjectData)
+
+  const [customDegree, setCustomDegree] = useState<CustomDegreeData | null>(null)
+
+  // Fetch user's custom degree if authenticated
+  useEffect(() => {
+    async function loadCustomDegree() {
+      if (isAuthenticated && user) {
+        try {
+          const data = await getCustomDegree(user.uid)
+          setCustomDegree(data)
+        } catch (e) {
+          console.error('Failed to load custom degree:', e)
+        }
+      } else {
+        setCustomDegree(null)
+      }
+    }
+    loadCustomDegree()
+  }, [isAuthenticated, user])
+
+  // Combine static and custom degree programs
+  const combinedSubjectData = useMemo(() => {
+    if (!customDegree) return subjectData
+
+    const customFacultyBlock = {
+      'Custom Degree': {
+        [customDegree.degreeName]: customDegree.semesters,
+      },
+    }
+
+    return {
+      ...subjectData,
+      ...customFacultyBlock,
+    }
+  }, [customDegree])
+
+  const facultyOptions = useMemo(() => Object.keys(combinedSubjectData), [combinedSubjectData])
   const [facultySelected, setFacultySelected] = useState(DEFAULT_FACULTY)
   const [degreeSelected, setDegreeSelected] = useState(DEFAULT_DEGREE)
   const [semSelected, setSemSelected] = useState(DEFAULT_SEMESTER)
@@ -205,13 +251,13 @@ function Grades() {
 
   const degreeOptions =
     facultySelected !== DEFAULT_FACULTY
-      ? Object.keys(subjectData[facultySelected] || {})
+      ? Object.keys(combinedSubjectData[facultySelected] || {})
       : []
 
   const semesterOptions =
     facultySelected !== DEFAULT_FACULTY && degreeSelected !== DEFAULT_DEGREE
       ? Object.keys(
-          (subjectData[facultySelected]?.[degreeSelected] as Record<
+          (combinedSubjectData[facultySelected]?.[degreeSelected] as Record<
             string,
             SemesterSubjects
           >) || {}
@@ -224,7 +270,7 @@ function Grades() {
   useEffect(() => {
     if (facultySelected && degreeSelected && semSelected) {
       const semesterData =
-        subjectData[facultySelected]?.[degreeSelected]?.[semSelected]
+        combinedSubjectData[facultySelected]?.[degreeSelected]?.[semSelected]
       if (semesterData) {
         setSubjects(semesterData.core || [])
         setElectives(semesterData.electives || [])
@@ -430,6 +476,17 @@ function Grades() {
               </div>
             </div>
 
+            {/* Custom Degree Trigger */}
+            <div className="flex justify-center mb-8 -mt-4">
+              <Button
+                variant="link"
+                className="text-primary hover:underline text-sm font-medium"
+                onClick={handleCustomDegreeClick}
+              >
+                Can't find your degree program? Create a Custom Degree
+              </Button>
+            </div>
+
             {/* Core Subjects Table */}
             {subjects.length > 0 && (
               <div className="mt-10 max-w-4xl mx-auto">
@@ -626,6 +683,8 @@ function Grades() {
       <footer className="w-full text-center text-xs text-muted-foreground bg-background py-2 border-t border-border z-50 opacity-40">
         Developed by Toran
       </footer>
+
+      <CustomDegreeAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
     </div>
   )
 }
