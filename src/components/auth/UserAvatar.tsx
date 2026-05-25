@@ -24,6 +24,10 @@ export function UserAvatar({
 
   if (!user) return null
 
+  const isGoogleUser = user.providerData?.some(
+    (provider) => provider.providerId === 'google.com'
+  )
+
   const handleSignOut = async () => {
     try {
       onSignOutStart?.()
@@ -98,16 +102,18 @@ export function UserAvatar({
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleResetPassword}
-          disabled={isResettingPassword}
-          className="cursor-pointer hover:bg-accent focus:bg-accent"
-        >
-          <Key className="mr-2 h-4 w-4" />
-          <span className="font-medium">
-            {isResettingPassword ? 'Sending...' : 'Reset password'}
-          </span>
-        </DropdownMenuItem>
+        {!isGoogleUser && (
+          <DropdownMenuItem
+            onClick={handleResetPassword}
+            disabled={isResettingPassword}
+            className="cursor-pointer hover:bg-accent focus:bg-accent"
+          >
+            <Key className="mr-2 h-4 w-4" />
+            <span className="font-medium">
+              {isResettingPassword ? 'Sending...' : 'Reset password'}
+            </span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onClick={handleSignOut}
           className="cursor-pointer bg-destructive/5 text-destructive hover:bg-destructive/15 hover:text-destructive focus:bg-destructive/15 focus:text-destructive dark:bg-destructive/10 dark:text-white/80 dark:hover:bg-destructive/20"
