@@ -75,9 +75,27 @@ export default function CustomDegreePage() {
               setSemesters(mappedSems)
             }
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error loading existing custom degree:', error)
-          toast.error('Failed to load existing custom degree.')
+          
+          // Check if it is a Firestore permission denied error
+          const isPermissionDenied = 
+            error?.code === 'permission-denied' || 
+            (error?.message && error.message.includes('permission-denied')) ||
+            (error?.message && error.message.includes('Permission'))
+
+          if (isPermissionDenied) {
+            console.warn(
+              'Firebase security rules warning: Please ensure your Firestore security rules allow ' +
+              'read/write access to the "customDegree" collection. ' +
+              'Update your firestore.rules to include:\n\n' +
+              'match /users/{userId}/customDegree/{document} {\n' +
+              '  allow read, write: if request.auth != null && request.auth.uid == userId;\n' +
+              '}\n'
+            )
+          } else {
+            toast.error('Failed to load existing custom degree.')
+          }
         } finally {
           setIsLoadingExisting(false)
         }
@@ -237,9 +255,22 @@ export default function CustomDegreePage() {
       
       // Navigate back to addGrades
       navigate('/addGrades')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving custom degree:', error)
-      toast.error('Failed to save degree program. Please try again.')
+      
+      const isPermissionDenied = 
+        error?.code === 'permission-denied' || 
+        (error?.message && error.message.includes('permission-denied')) ||
+        (error?.message && error.message.includes('Permission'))
+
+      if (isPermissionDenied) {
+        toast.error(
+          'Missing database permissions! Please configure your Firestore security rules to allow access to the customDegree collection.',
+          { duration: 8000 }
+        )
+      } else {
+        toast.error('Failed to save degree program. Please try again.')
+      }
     } finally {
       setIsSaving(false)
     }
