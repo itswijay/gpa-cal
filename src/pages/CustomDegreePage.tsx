@@ -33,6 +33,13 @@ export default function CustomDegreePage() {
   const navigate = useNavigate()
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const [degreeName, setDegreeName] = useState('')
+  const [universityName, setUniversityName] = useState('')
+  const [universityShort, setUniversityShort] = useState('')
+  const [facultyName, setFacultyName] = useState('')
+  const [isSuggested, setIsSuggested] = useState(false)
+  const [suggestionStatus, setSuggestionStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [suggestionId, setSuggestionId] = useState('')
   const [semesters, setSemesters] = useState<DynamicSemester[]>([
     {
       id: 'sem_1',
@@ -59,6 +66,13 @@ export default function CustomDegreePage() {
           const existing = await getCustomDegree(user.uid)
           if (existing) {
             setDegreeName(existing.degreeName)
+            setUniversityName(existing.universityName || '')
+            setUniversityShort(existing.universityShort || '')
+            setFacultyName(existing.facultyName || '')
+            setIsSuggested(existing.isSuggested || false)
+            setSuggestionStatus(existing.suggestionStatus || 'pending')
+            setRejectionReason(existing.rejectionReason || '')
+            setSuggestionId(existing.suggestionId || '')
             
             // Map Firestore SemesterMap back to our dynamic local state
             const mappedSems: DynamicSemester[] = Object.entries(existing.semesters).map(([semName, semData], idx) => ({
@@ -192,6 +206,21 @@ export default function CustomDegreePage() {
   }
 
   const validateForm = (): boolean => {
+    if (isSuggested) {
+      if (!universityName.trim()) {
+        toast.error('Please enter the full university name for suggestion.')
+        return false
+      }
+      if (!universityShort.trim()) {
+        toast.error('Please enter the university abbreviation (e.g. SUSL).')
+        return false
+      }
+      if (!facultyName.trim()) {
+        toast.error('Please enter the faculty name.')
+        return false
+      }
+    }
+
     if (!degreeName.trim()) {
       toast.error('Please enter a degree program name.')
       return false
@@ -245,13 +274,28 @@ export default function CustomDegreePage() {
         }
       })
 
+      // If it is suggested, and we don't have an approved status, keep/set status to pending
+      const finalStatus = (isSuggested && suggestionStatus !== 'approved') ? 'pending' : suggestionStatus
+
       const customDegreeData: CustomDegreeData = {
         degreeName: degreeName.trim(),
+        universityName: universityName.trim() || undefined,
+        universityShort: universityShort.trim() || undefined,
+        facultyName: facultyName.trim() || undefined,
+        isSuggested,
+        suggestionStatus: isSuggested ? finalStatus : undefined,
+        rejectionReason: isSuggested ? rejectionReason : undefined,
+        suggestionId: suggestionId || undefined,
         semesters: mappedSemesters,
       }
 
-      await saveCustomDegree(user.uid, customDegreeData)
-      toast.success('Custom degree program saved successfully!')
+      await saveCustomDegree(user.uid, customDegreeData, user.email || undefined)
+      
+      if (isSuggested) {
+        toast.success('Custom degree saved and suggested for review!')
+      } else {
+        toast.success('Custom degree program saved successfully!')
+      }
       
       // Navigate back to addGrades
       navigate('/addGrades')
@@ -321,23 +365,112 @@ export default function CustomDegreePage() {
             </motion.div>
 
             {/* Degree Metadata */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6">
-              <div className="space-y-2">
-                <Label htmlFor="degreeName" className="text-base font-semibold text-foreground">
-                  Degree Program Name
-                </Label>
-                <Input
-                  id="degreeName"
-                  placeholder="e.g. BSc in Computer Science"
-                  value={degreeName}
-                  onChange={(e) => setDegreeName(e.target.value)}
-                  className="bg-muted/50 border-border max-w-xl h-11"
-                  disabled={isSaving}
-                  maxLength={100}
-                />
-                <p className="text-xs text-muted-foreground">
-                  This custom title will display inside your GPA reports and grade selector tools.
-                </p>
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="universityName" className="text-sm font-semibold text-foreground">
+                    University Full Name
+                  </Label>
+                  <Input
+                    id="universityName"
+                    placeholder="e.g. Sabaragamuwa University of Sri Lanka"
+                    value={universityName}
+                    onChange={(e) => setUniversityName(e.target.value)}
+                    className="bg-muted/50 border-border h-11"
+                    disabled={isSaving}
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="universityShort" className="text-sm font-semibold text-foreground">
+                    University Abbreviation
+                  </Label>
+                  <Input
+                    id="universityShort"
+                    placeholder="e.g. SUSL"
+                    value={universityShort}
+                    onChange={(e) => setUniversityShort(e.target.value)}
+                    className="bg-muted/50 border-border h-11 uppercase font-semibold"
+                    disabled={isSaving}
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="facultyName" className="text-sm font-semibold text-foreground">
+                    Faculty Name
+                  </Label>
+                  <Input
+                    id="facultyName"
+                    placeholder="e.g. Faculty of Computing"
+                    value={facultyName}
+                    onChange={(e) => setFacultyName(e.target.value)}
+                    className="bg-muted/50 border-border h-11"
+                    disabled={isSaving}
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="degreeName" className="text-sm font-semibold text-foreground">
+                    Degree Program Name
+                  </Label>
+                  <Input
+                    id="degreeName"
+                    placeholder="e.g. BSc in Computer Science"
+                    value={degreeName}
+                    onChange={(e) => setDegreeName(e.target.value)}
+                    className="bg-muted/50 border-border h-11"
+                    disabled={isSaving}
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+
+              {/* Public Suggestion Toggle */}
+              <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label htmlFor="suggestToggle" className="text-sm font-semibold text-foreground cursor-pointer">
+                      Suggest for Public Database
+                    </Label>
+                    {isSuggested && (
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        suggestionStatus === 'approved'
+                          ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                          : suggestionStatus === 'rejected'
+                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                          : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                      }`}>
+                        {suggestionStatus === 'approved' ? 'Approved' : suggestionStatus === 'rejected' ? 'Changes Requested' : 'Under Review'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Allow an admin to review and approve this syllabus structure to be preloaded for all students.
+                  </p>
+                  {suggestionStatus === 'rejected' && rejectionReason && (
+                    <p className="text-xs text-red-500 font-semibold bg-red-500/5 p-2 rounded border border-red-500/10 mt-1">
+                      Note from Admin: {rejectionReason}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="suggestToggle"
+                    checked={isSuggested}
+                    onChange={(e) => {
+                      setIsSuggested(e.target.checked)
+                      if (e.target.checked && suggestionStatus === 'rejected') {
+                        setSuggestionStatus('pending')
+                      }
+                    }}
+                    className="h-5 w-5 rounded border-border text-primary focus:ring-primary bg-muted cursor-pointer"
+                    disabled={isSaving || suggestionStatus === 'approved'}
+                  />
+                </div>
               </div>
             </div>
 

@@ -393,10 +393,32 @@ function Grades() {
                 variant="outline"
                 className="absolute right-0 border-primary/40 hover:border-primary hover:bg-primary/5 text-primary bg-card transition-all font-semibold rounded-lg shadow-sm h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-4 sm:py-2 gap-2 text-xs sm:text-sm flex items-center justify-center animate-pulse-subtle"
                 onClick={handleCustomDegreeClick}
-                title="Create Custom Degree"
+                title={customDegree ? "Manage Custom Degree" : "Create Custom Degree"}
               >
-                <GraduationCap className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Create Custom Degree</span>
+                <div className="relative">
+                  <GraduationCap className="h-4 w-4 shrink-0" />
+                  {customDegree?.isSuggested && (
+                    <span 
+                      className={`absolute -top-1.5 -right-1.5 h-2 w-2 rounded-full border border-card ${
+                        customDegree.suggestionStatus === 'approved'
+                          ? 'bg-green-500'
+                          : customDegree.suggestionStatus === 'rejected'
+                          ? 'bg-red-500'
+                          : 'bg-yellow-500'
+                      }`}
+                      title={
+                        customDegree.suggestionStatus === 'approved'
+                          ? 'Suggestion Approved'
+                          : customDegree.suggestionStatus === 'rejected'
+                          ? 'Changes Requested'
+                          : 'Suggestion Under Review'
+                      }
+                    />
+                  )}
+                </div>
+                <span className="hidden sm:inline">
+                  {customDegree ? 'Manage Custom Degree' : 'Create Custom Degree'}
+                </span>
               </Button>
             </div>
 

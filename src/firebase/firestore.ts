@@ -16,8 +16,15 @@ import type { SemesterMap } from '../data/types'
 
 // Types
 export interface CustomDegreeData {
+  universityName?: string
+  universityShort?: string
+  facultyName?: string
   degreeName: string
   semesters: SemesterMap
+  isSuggested?: boolean
+  suggestionStatus?: 'pending' | 'approved' | 'rejected'
+  rejectionReason?: string
+  suggestionId?: string
   updatedAt?: unknown
 }
 export interface GPAEntry {
@@ -257,11 +264,41 @@ export async function importDataToFirestore(
  */
 export async function saveCustomDegree(
   userId: string,
-  data: CustomDegreeData
+  data: CustomDegreeData,
+  userEmail?: string
 ): Promise<void> {
   const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  
+  let suggestionId = data.suggestionId
+  
+  if (data.isSuggested) {
+    if (!suggestionId) {
+      // Create new suggestion document with auto-generated ID
+      const suggestionsCol = collection(db, 'curriculaSuggestions')
+      const suggestionRef = doc(suggestionsCol)
+      suggestionId = suggestionRef.id
+    }
+    
+    const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
+    await setDoc(suggestionRef, {
+      id: suggestionId,
+      suggestedBy: userId,
+      suggestedByEmail: userEmail || 'anonymous@mygpacal.com',
+      universityName: data.universityName || '',
+      universityShort: (data.universityShort || '').toUpperCase(),
+      facultyName: data.facultyName || '',
+      degreeName: data.degreeName,
+      semesters: data.semesters,
+      status: data.suggestionStatus || 'pending',
+      rejectionReason: data.rejectionReason || '',
+      createdAt: serverTimestamp(),
+    })
+  }
+
   await setDoc(customDegreeRef, {
     ...data,
+    universityShort: data.universityShort ? data.universityShort.toUpperCase() : undefined,
+    suggestionId: suggestionId || null,
     updatedAt: serverTimestamp(),
   })
 }
@@ -279,4 +316,18 @@ export async function getCustomDegree(
     return snapshot.data() as CustomDegreeData
   }
   return null
+}
+
+/**
+ * Seed static data structure into Firestore globalCurricula/SUSL document
+ */
+export async function seedStaticDataToFirestore(): Promise<void> {
+  const { subjectData } = await import('../data/subjects/index')
+  const universityRef = doc(db, 'globalCurricula', 'SUSL')
+  await setDoc(universityRef, {
+    name: 'Sabaragamuwa University of Sri Lanka',
+    shortName: 'SUSL',
+    faculties: subjectData,
+    updatedAt: serverTimestamp(),
+  })
 }
