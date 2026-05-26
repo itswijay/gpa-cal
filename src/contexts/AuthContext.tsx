@@ -8,9 +8,12 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
+import { getUserProfile, createUserProfile, type UserProfile } from '../firebase/firestore'
 
 export interface AuthContextType {
   user: User | null
+  userProfile: UserProfile | null
+  isAdmin: boolean
   loading: boolean
   isAuthenticated: boolean
   isGuest: boolean
@@ -24,11 +27,33 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser)
+      if (firebaseUser) {
+        try {
+          let profile = await getUserProfile(firebaseUser.uid)
+          if (!profile) {
+            const newProfile: UserProfile = {
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              photoURL: firebaseUser.photoURL || '',
+              role: 'user',
+            }
+            await createUserProfile(firebaseUser.uid, newProfile)
+            profile = newProfile
+          }
+          setUserProfile(profile)
+        } catch (e) {
+          console.error('Error fetching or initializing user profile:', e)
+          setUserProfile(null)
+        }
+      } else {
+        setUserProfile(null)
+      }
       setLoading(false)
     })
 
@@ -89,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
+    userProfile,
+    isAdmin: userProfile?.role === 'admin',
     loading,
     isAuthenticated: !!user,
     isGuest: !user,

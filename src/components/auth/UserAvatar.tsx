@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { LogOut, User, Key } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { LogOut, User, Key, ShieldCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../hooks/useAuth'
 import {
@@ -19,7 +20,8 @@ export function UserAvatar({
   className = '',
   onSignOutStart,
 }: UserAvatarProps) {
-  const { user, signOut, sendPasswordReset } = useAuth()
+  const { user, signOut, sendPasswordReset, isAdmin } = useAuth()
+  const navigate = useNavigate()
   const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   if (!user) return null
@@ -112,6 +114,15 @@ export function UserAvatar({
             <span className="font-medium">
               {isResettingPassword ? 'Sending...' : 'Reset password'}
             </span>
+          </DropdownMenuItem>
+        )}
+        {isAdmin && (
+          <DropdownMenuItem
+            onClick={() => navigate('/admin/moderation')}
+            className="cursor-pointer text-primary hover:bg-primary/10 focus:bg-primary/10"
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            <span className="font-semibold">Moderation Console</span>
           </DropdownMenuItem>
         )}
         <DropdownMenuItem

@@ -10,6 +10,7 @@ import MainPage from './pages/MainPage'
 import Grades from './pages/addGrades'
 import LoginPage from './pages/LoginPage'
 import CustomDegreePage from './pages/CustomDegreePage'
+import ModerationPage from './pages/ModerationPage'
 import { Toaster } from 'react-hot-toast'
 import { inject } from '@vercel/analytics'
 
@@ -82,6 +83,20 @@ function AnimatedRoutes() {
                 transition={{ duration: 0.6 }}
               >
                 <CustomDegreePage />
+              </motion.div>
+            }
+          />
+          <Route
+            path="/admin/moderation"
+            element={
+              <motion.div
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.6 }}
+              >
+                <ModerationPage />
               </motion.div>
             }
           />

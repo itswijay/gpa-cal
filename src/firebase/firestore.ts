@@ -44,6 +44,7 @@ export interface UserProfile {
   email: string
   displayName: string
   photoURL: string
+  role?: string
   createdAt?: Date
   preferences?: {
     faculty?: string
@@ -328,5 +329,106 @@ export async function getCustomDegree(
   }
   return null
 }
+
+export interface CurriculumSuggestion {
+  id: string
+  suggestedBy: string
+  suggestedByEmail: string
+  universityName: string
+  universityShort: string
+  facultyName: string
+  degreeName: string
+  semesters: SemesterMap
+  status: 'pending' | 'approved' | 'rejected'
+  rejectionReason?: string
+  createdAt?: unknown
+}
+
+/**
+ * Fetch all dynamic curriculum suggestions from queue
+ */
+export async function getCurriculaSuggestions(): Promise<CurriculumSuggestion[]> {
+  const suggestionsCol = collection(db, 'curriculaSuggestions')
+  const q = query(suggestionsCol, orderBy('createdAt', 'desc'))
+  const snapshot = await getDocs(q)
+  
+  const list: CurriculumSuggestion[] = []
+  snapshot.forEach((doc) => {
+    list.push(doc.data() as CurriculumSuggestion)
+  })
+  return list
+}
+
+/**
+ * Approve custom curriculum suggestion and merge structure into globalCurricula
+ */
+export async function approveCurriculumSuggestion(
+  suggestion: CurriculumSuggestion
+): Promise<void> {
+  const uShort = suggestion.universityShort.toUpperCase()
+  const universityRef = doc(db, 'globalCurricula', uShort)
+  const uniSnap = await getDoc(universityRef)
+
+  let faculties: Record<string, any> = {}
+  if (uniSnap.exists()) {
+    const data = uniSnap.data()
+    faculties = data.faculties || {}
+  }
+
+  if (!faculties[suggestion.facultyName]) {
+    faculties[suggestion.facultyName] = {}
+  }
+
+  // Merge the curriculum structure into global options
+  faculties[suggestion.facultyName][suggestion.degreeName] = suggestion.semesters
+
+  // 1. Update/Create global university document
+  await setDoc(universityRef, {
+    name: suggestion.universityName,
+    shortName: uShort,
+    faculties: faculties,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+
+  // 2. Mark suggestion as approved in queue
+  const suggestionRef = doc(db, 'curriculaSuggestions', suggestion.id)
+  await setDoc(suggestionRef, {
+    status: 'approved',
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+
+  // 3. Mark user private Custom Degree as approved
+  const customDegreeRef = doc(db, 'users', suggestion.suggestedBy, 'customDegree', 'default')
+  await setDoc(customDegreeRef, {
+    suggestionStatus: 'approved',
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+}
+
+/**
+ * Reject dynamic curriculum suggestion and attach admin rejection reason note
+ */
+export async function rejectCurriculumSuggestion(
+  suggestionId: string,
+  userId: string,
+  reason: string
+): Promise<void> {
+  // 1. Mark suggestion as rejected in queue with reason
+  const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
+  await setDoc(suggestionRef, {
+    status: 'rejected',
+    rejectionReason: reason,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+
+  // 2. Update user private Custom Degree with rejection status and reason
+  const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  await setDoc(customDegreeRef, {
+    suggestionStatus: 'rejected',
+    rejectionReason: reason,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+}
+
 
 
