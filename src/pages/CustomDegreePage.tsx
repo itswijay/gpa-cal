@@ -89,14 +89,15 @@ export default function CustomDegreePage() {
               setSemesters(mappedSems)
             }
           }
-        } catch (error: any) {
+        } catch (error) {
           console.error('Error loading existing custom degree:', error)
           
           // Check if it is a Firestore permission denied error
+          const err = error as { code?: string; message?: string } | null
           const isPermissionDenied = 
-            error?.code === 'permission-denied' || 
-            (error?.message && error.message.includes('permission-denied')) ||
-            (error?.message && error.message.includes('Permission'))
+            err?.code === 'permission-denied' || 
+            (err?.message && err.message.includes('permission-denied')) ||
+            (err?.message && err.message.includes('Permission'))
 
           if (isPermissionDenied) {
             console.warn(
@@ -296,16 +297,16 @@ export default function CustomDegreePage() {
       } else {
         toast.success('Custom degree program saved successfully!')
       }
-      
       // Navigate back to addGrades
       navigate('/addGrades')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving custom degree:', error)
       
+      const err = error as { code?: string; message?: string } | null
       const isPermissionDenied = 
-        error?.code === 'permission-denied' || 
-        (error?.message && error.message.includes('permission-denied')) ||
-        (error?.message && error.message.includes('Permission'))
+        err?.code === 'permission-denied' || 
+        (err?.message && err.message.includes('permission-denied')) ||
+        (err?.message && err.message.includes('Permission'))
 
       if (isPermissionDenied) {
         toast.error(

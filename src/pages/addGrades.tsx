@@ -21,6 +21,8 @@ import { useFirebaseData } from '../hooks/useFirebaseData'
 import { saveSemesterData, getCustomDegree, type CustomDegreeData } from '../firebase/firestore'
 import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
 import { CustomDegreeConflictDialog } from '../components/auth/CustomDegreeConflictDialog'
+import { db } from '../firebase/config'
+import { collection, getDocs } from 'firebase/firestore'
 
 const DEFAULT_FACULTY = 'Select Your Faculty'
 const DEFAULT_DEGREE = 'Select Your Degree Program'
@@ -31,6 +33,7 @@ type GPAEntry = {
   gpa: number
   credits: number
   grades?: Record<string, string>
+  university?: string
   faculty?: string
   degree?: string
 }
@@ -85,23 +88,89 @@ function Grades() {
     loadCustomDegree()
   }, [isAuthenticated, user])
 
-  // Combine static and custom degree programs
-  const combinedSubjectData = useMemo(() => {
-    if (!customDegree) return subjectData
+  const DEFAULT_UNIVERSITY = 'Select Your University'
+  const [globalCurriculaList, setGlobalCurriculaList] = useState<unknown[]>([])
+  const [universitySelected, setUniversitySelected] = useState(DEFAULT_UNIVERSITY)
 
-    const customFacultyBlock = {
-      'Custom Degree': {
-        [customDegree.degreeName]: customDegree.semesters,
-      },
+  // Fetch all available globalCurricula from Firestore
+  useEffect(() => {
+    async function fetchGlobalCurricula() {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'globalCurricula'))
+        const list = querySnapshot.docs.map(doc => doc.data())
+        setGlobalCurriculaList(list)
+      } catch (err) {
+        console.error('Failed to fetch public curricula from Firestore:', err)
+      }
+    }
+    fetchGlobalCurricula()
+  }, [])
+
+  // Resolve curricula mapping (merges offline static fallback and private custom degree structures)
+  const resolvedCurricula = useMemo(() => {
+    const fallbackUni = {
+      name: 'Sabaragamuwa University of Sri Lanka',
+      shortName: 'SUSL',
+      faculties: subjectData as unknown as Record<string, Record<string, unknown>>,
     }
 
-    return {
-      ...subjectData,
-      ...customFacultyBlock,
+    const uniMap: Record<
+      string,
+      {
+        name: string
+        shortName: string
+        faculties: Record<string, Record<string, unknown>>
+      }
+    > = {
+      SUSL: fallbackUni,
     }
-  }, [customDegree])
 
-  const facultyOptions = useMemo(() => Object.keys(combinedSubjectData), [combinedSubjectData])
+    globalCurriculaList.forEach((item) => {
+      const doc = item as {
+        name?: string
+        shortName?: string
+        faculties?: Record<string, Record<string, unknown>>
+      }
+      if (doc.shortName) {
+        const key = doc.shortName.toUpperCase()
+        uniMap[key] = {
+          name: doc.name || '',
+          shortName: key,
+          faculties: (doc.faculties || {}) as Record<string, Record<string, unknown>>,
+        }
+      }
+    })
+
+    if (customDegree) {
+      const uShort = (customDegree.universityShort || 'Custom Degree').toUpperCase()
+      const uName = customDegree.universityName || 'Custom Degree'
+      const fName = customDegree.facultyName || 'Custom Faculty'
+
+      if (!uniMap[uShort]) {
+        uniMap[uShort] = {
+          name: uName,
+          shortName: uShort,
+          faculties: {} as Record<string, Record<string, unknown>>,
+        }
+      }
+
+      if (!uniMap[uShort].faculties[fName]) {
+        uniMap[uShort].faculties[fName] = {} as Record<string, unknown>
+      }
+
+      uniMap[uShort].faculties[fName][customDegree.degreeName] = customDegree.semesters
+    }
+
+    return uniMap
+  }, [globalCurriculaList, customDegree])
+
+  const universityOptions = useMemo(() => Object.values(resolvedCurricula), [resolvedCurricula])
+
+  const facultyOptions = useMemo(() => {
+    if (universitySelected === DEFAULT_UNIVERSITY) return []
+    return Object.keys(resolvedCurricula[universitySelected]?.faculties || {})
+  }, [resolvedCurricula, universitySelected])
+
   const [facultySelected, setFacultySelected] = useState(DEFAULT_FACULTY)
   const [degreeSelected, setDegreeSelected] = useState(DEFAULT_DEGREE)
   const [semSelected, setSemSelected] = useState(DEFAULT_SEMESTER)
@@ -110,6 +179,32 @@ function Grades() {
   const [grades, setGrades] = useState<Record<string, string>>({})
   const [electiveCreditsRequired, setElectiveCreditsRequired] = useState(0)
   const [selectedElectiveCredits, setSelectedElectiveCredits] = useState(0)
+
+  const savedSemesters = useMemo(() => {
+    return JSON.parse(
+      localStorage.getItem('gpaData') || '[]'
+    ) as GPAEntry[]
+  }, [])
+
+  // Auto-save selections to localStorage
+  useEffect(() => {
+    if (
+      universitySelected !== DEFAULT_UNIVERSITY ||
+      facultySelected !== DEFAULT_FACULTY ||
+      degreeSelected !== DEFAULT_DEGREE ||
+      semSelected !== DEFAULT_SEMESTER
+    ) {
+      localStorage.setItem(
+        'gpaSelections',
+        JSON.stringify({
+          university: universitySelected,
+          faculty: facultySelected,
+          degree: degreeSelected,
+          semester: semSelected,
+        })
+      )
+    }
+  }, [universitySelected, facultySelected, degreeSelected, semSelected])
 
   const handleSave = async () => {
     if (semSelected === DEFAULT_SEMESTER) {
@@ -127,6 +222,7 @@ function Grades() {
       gpa,
       credits: totalCredits,
       grades: grades, // Store the grades for future editing
+      university: universitySelected,
       faculty: facultySelected,
       degree: degreeSelected,
     }
@@ -151,6 +247,7 @@ function Grades() {
         ]
 
         localStorage.setItem('gpaData', JSON.stringify(updatedData))
+        localStorage.setItem('lockedUniversity', universitySelected)
         localStorage.setItem('lockedFaculty', facultySelected)
         localStorage.setItem('lockedDegree', degreeSelected)
 
@@ -175,6 +272,7 @@ function Grades() {
     const savedSelections = JSON.parse(
       localStorage.getItem('gpaSelections') || '{}'
     )
+    const lockedUniversity = localStorage.getItem('lockedUniversity')
     const lockedFaculty = localStorage.getItem('lockedFaculty')
     const lockedDegree = localStorage.getItem('lockedDegree')
 
@@ -189,7 +287,14 @@ function Grades() {
         // Set the semester selection
         setSemSelected(semesterData.semester)
 
-        // Set faculty and degree from editing data
+        // Set university, faculty, and degree from editing data
+        if (semesterData.university) {
+          setUniversitySelected(semesterData.university)
+        } else {
+          // Backward compatibility: Auto-map older records without university metadata to SUSL
+          setUniversitySelected('SUSL')
+        }
+
         if (semesterData.faculty) {
           setFacultySelected(semesterData.faculty)
         } else {
@@ -212,7 +317,19 @@ function Grades() {
         console.error('Error parsing editing data:', error)
       }
     } else {
-      // Not editing, use locked values or saved selections
+      // Not editing, use locked values or saved selections or auto-map existing user data
+      if (lockedUniversity) {
+        setUniversitySelected(lockedUniversity)
+      } else if (savedSelections.university) {
+        setUniversitySelected(savedSelections.university)
+      } else if (isAuthenticated && firebaseData.length > 0) {
+        // Auto-map first semester to SUSL if university is missing
+        setUniversitySelected(firebaseData[0].university || 'SUSL')
+      } else if (savedSemesters.length > 0) {
+        // Guest users: Auto-map first semester to SUSL if university is missing
+        setUniversitySelected(savedSemesters[0].university || 'SUSL')
+      }
+
       if (lockedFaculty) setFacultySelected(lockedFaculty)
       else if (savedSelections.faculty)
         setFacultySelected(savedSelections.faculty)
@@ -223,25 +340,20 @@ function Grades() {
       if (savedSelections.semester) setSemSelected(savedSelections.semester)
     }
 
-    // For authenticated users, check Firebase data for first semester to lock faculty/degree
+    // For authenticated users, check Firebase data for first semester to lock selections
     if (isAuthenticated && firebaseData.length > 0) {
       const firstSemester = firebaseData[0]
-      if (firstSemester.faculty && !isEditing) {
-        setFacultySelected(firstSemester.faculty)
-      }
-      if (firstSemester.degree && !isEditing) {
-        setDegreeSelected(firstSemester.degree)
+      if (!isEditing) {
+        setUniversitySelected(firstSemester.university || 'SUSL')
+        if (firstSemester.faculty) {
+          setFacultySelected(firstSemester.faculty)
+        }
+        if (firstSemester.degree) {
+          setDegreeSelected(firstSemester.degree)
+        }
       }
     }
-  }, [isAuthenticated, firebaseData, isEditing])
-
-  const savedSemesters = JSON.parse(
-    localStorage.getItem('gpaData') || '[]'
-  ) as {
-    semester: string
-    gpa: number
-    subjects: number
-  }[]
+  }, [isAuthenticated, firebaseData, isEditing, savedSemesters])
 
   // For authenticated users, combine localStorage and Firebase semesters
   const usedSemesters = useMemo(() => {
@@ -262,28 +374,39 @@ function Grades() {
     }
   }, [semSelected, usedSemesters, isEditing])
 
-  const degreeOptions =
-    facultySelected !== DEFAULT_FACULTY
-      ? Object.keys(combinedSubjectData[facultySelected] || {})
-      : []
+  const degreeOptions = useMemo(() => {
+    if (universitySelected === DEFAULT_UNIVERSITY || facultySelected === DEFAULT_FACULTY) return []
+    return Object.keys(resolvedCurricula[universitySelected]?.faculties[facultySelected] || {})
+  }, [resolvedCurricula, universitySelected, facultySelected])
 
-  const semesterOptions =
-    facultySelected !== DEFAULT_FACULTY && degreeSelected !== DEFAULT_DEGREE
-      ? Object.keys(
-          (combinedSubjectData[facultySelected]?.[degreeSelected] as Record<
-            string,
-            SemesterSubjects
-          >) || {}
-        ).filter(
-          (sem) =>
-            !usedSemesters.includes(sem) || (isEditing && sem === semSelected)
-        )
-      : []
+  const semesterOptions = useMemo(() => {
+    if (
+      universitySelected === DEFAULT_UNIVERSITY ||
+      facultySelected === DEFAULT_FACULTY ||
+      degreeSelected === DEFAULT_DEGREE
+    ) {
+      return []
+    }
+    return Object.keys(
+      (resolvedCurricula[universitySelected]?.faculties[facultySelected]?.[degreeSelected] as Record<
+        string,
+        SemesterSubjects
+      >) || {}
+    ).filter(
+      (sem) =>
+        !usedSemesters.includes(sem) || (isEditing && sem === semSelected)
+    )
+  }, [resolvedCurricula, universitySelected, facultySelected, degreeSelected, usedSemesters, isEditing, semSelected])
 
   useEffect(() => {
-    if (facultySelected && degreeSelected && semSelected) {
-      const semesterData =
-        combinedSubjectData[facultySelected]?.[degreeSelected]?.[semSelected]
+    if (
+      universitySelected !== DEFAULT_UNIVERSITY &&
+      facultySelected !== DEFAULT_FACULTY &&
+      degreeSelected !== DEFAULT_DEGREE &&
+      semSelected !== DEFAULT_SEMESTER
+    ) {
+      const degreeData = resolvedCurricula[universitySelected]?.faculties[facultySelected]?.[degreeSelected] as Record<string, SemesterSubjects> | undefined
+      const semesterData = degreeData?.[semSelected]
       if (semesterData) {
         setSubjects(semesterData.core || [])
         setElectives(semesterData.electives || [])
@@ -300,12 +423,13 @@ function Grades() {
       }
     }
   }, [
+    universitySelected,
     facultySelected,
     degreeSelected,
     semSelected,
     isEditing,
     editingSemesterData,
-    combinedSubjectData,
+    resolvedCurricula,
   ])
 
   // Separate useEffect to handle loading grades when editingSemesterData changes
@@ -360,6 +484,7 @@ function Grades() {
     selectedElectiveCredits > electiveCreditsRequired
 
   const dropdownsSelected =
+    universitySelected !== DEFAULT_UNIVERSITY &&
     facultySelected !== DEFAULT_FACULTY &&
     degreeSelected !== DEFAULT_DEGREE &&
     semSelected !== DEFAULT_SEMESTER
@@ -424,12 +549,56 @@ function Grades() {
 
             {/* Dropdowns */}
             <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center sm:items-start gap-4 mb-8">
+              <div id="university" className="w-[18rem]">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="w-full justify-between bg-muted border-border hover:bg-accent text-muted-foreground"
+                      disabled={
+                        Boolean(localStorage.getItem('lockedUniversity')) ||
+                        isEditing ||
+                        (isAuthenticated && firebaseData.length > 0)
+                      }
+                    >
+                      <span className="truncate">
+                        {universitySelected === DEFAULT_UNIVERSITY
+                          ? DEFAULT_UNIVERSITY
+                          : resolvedCurricula[universitySelected]?.shortName || universitySelected}
+                      </span>
+                      <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[18rem] bg-popover border-border max-h-[300px] overflow-y-auto">
+                    {universityOptions.map((uni) => (
+                      <DropdownMenuItem
+                        key={uni.shortName}
+                        onSelect={() => {
+                          setUniversitySelected(uni.shortName)
+                          setFacultySelected(DEFAULT_FACULTY)
+                          setDegreeSelected(DEFAULT_DEGREE)
+                          setSemSelected(DEFAULT_SEMESTER)
+                        }}
+                        className="hover:bg-accent focus:bg-accent"
+                      >
+                        <div className="flex flex-col items-start gap-0.5 w-full">
+                          <span className="font-semibold text-xs text-primary">{uni.shortName}</span>
+                          <span className="text-[11px] text-muted-foreground truncate max-w-[16rem]">
+                            {uni.name}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               <div id="faculty" className="w-[18rem]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="w-full justify-between bg-muted border-border hover:bg-accent text-muted-foreground"
                       disabled={
+                        universitySelected === DEFAULT_UNIVERSITY ||
                         Boolean(localStorage.getItem('lockedFaculty')) ||
                         isEditing ||
                         (isAuthenticated && firebaseData.length > 0)
@@ -439,14 +608,14 @@ function Grades() {
                       <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[18rem] bg-popover border-border">
+                  <DropdownMenuContent className="w-[18rem] bg-popover border-border max-h-[300px] overflow-y-auto">
                     {facultyOptions.map((option) => (
                       <DropdownMenuItem
                         key={option}
                         onSelect={() => {
                           setFacultySelected(option)
-                          setDegreeSelected('Select Your Degree Program')
-                          setSemSelected('Select Your Semester')
+                          setDegreeSelected(DEFAULT_DEGREE)
+                          setSemSelected(DEFAULT_SEMESTER)
                         }}
                         className="hover:bg-accent focus:bg-accent"
                       >
@@ -465,7 +634,6 @@ function Grades() {
                       disabled={
                         facultySelected === DEFAULT_FACULTY ||
                         Boolean(localStorage.getItem('lockedDegree')) ||
-                        facultySelected === 'Select Your Faculty' ||
                         isEditing ||
                         (isAuthenticated && firebaseData.length > 0)
                       }
@@ -474,13 +642,13 @@ function Grades() {
                       <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[18rem] bg-popover border-border">
+                  <DropdownMenuContent className="w-[18rem] bg-popover border-border max-h-[300px] overflow-y-auto">
                     {degreeOptions.map((option) => (
                       <DropdownMenuItem
                         key={option}
                         onSelect={() => {
                           setDegreeSelected(option)
-                          setSemSelected('Select Your Semester')
+                          setSemSelected(DEFAULT_SEMESTER)
                         }}
                         className="hover:bg-accent focus:bg-accent"
                       >
@@ -497,7 +665,7 @@ function Grades() {
                     <Button
                       className="w-full justify-between bg-muted border-border hover:bg-accent text-muted-foreground"
                       disabled={
-                        degreeSelected === 'Select Your Degree Program' ||
+                        degreeSelected === DEFAULT_DEGREE ||
                         isEditing
                       }
                     >
@@ -505,7 +673,7 @@ function Grades() {
                       <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[18rem] bg-popover border-border">
+                  <DropdownMenuContent className="w-[18rem] bg-popover border-border max-h-[300px] overflow-y-auto">
                     {semesterOptions.map((option) => (
                       <DropdownMenuItem
                         key={option}

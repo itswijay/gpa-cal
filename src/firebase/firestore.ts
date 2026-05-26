@@ -33,6 +33,7 @@ export interface GPAEntry {
   gpa: number
   credits: number
   grades?: Record<string, string>
+  university?: string
   faculty?: string
   degree?: string
   createdAt?: Date
@@ -295,12 +296,22 @@ export async function saveCustomDegree(
     })
   }
 
-  await setDoc(customDegreeRef, {
-    ...data,
-    universityShort: data.universityShort ? data.universityShort.toUpperCase() : undefined,
+  // Build clean save object for Firestore (replacing undefined with null or omitting them)
+  const saveObj: Record<string, unknown> = {
+    degreeName: data.degreeName,
+    semesters: data.semesters,
+    isSuggested: data.isSuggested || false,
     suggestionId: suggestionId || null,
-    updatedAt: serverTimestamp(),
-  })
+    updatedAt: serverTimestamp()
+  }
+
+  if (data.universityName !== undefined) saveObj.universityName = data.universityName
+  if (data.universityShort !== undefined) saveObj.universityShort = data.universityShort.toUpperCase()
+  if (data.facultyName !== undefined) saveObj.facultyName = data.facultyName
+  if (data.suggestionStatus !== undefined) saveObj.suggestionStatus = data.suggestionStatus
+  if (data.rejectionReason !== undefined) saveObj.rejectionReason = data.rejectionReason
+
+  await setDoc(customDegreeRef, saveObj)
 }
 
 /**

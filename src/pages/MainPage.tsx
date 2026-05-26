@@ -116,6 +116,7 @@ const MainPage = () => {
     if (window.confirm('Are you sure you want to clear all GPA data?')) {
       // Clear local storage entries
       localStorage.removeItem('gpaData')
+      localStorage.removeItem('lockedUniversity')
       localStorage.removeItem('lockedFaculty')
       localStorage.removeItem('lockedDegree')
       localStorage.removeItem('gpaSelections')
