@@ -68,14 +68,25 @@ const steps = [
     ],
   },
   {
-    icon: Cloud,
-    title: 'Cloud Sync (Optional)',
+    icon: GraduationCap,
+    title: 'Custom Degree Program',
     description:
-      'Sign in with Google to sync your data across devices and access advanced features.',
+      "If your specific syllabus isn't preloaded, you can unlock our builder to structure your own dynamic curriculum!",
     tips: [
-      'Access your data from any device',
-      'Your local data can be imported to your account',
-      'More features coming soon for registered users!',
+      'Sign in to your account and click "Create Custom Degree" at the top-right',
+      'Define semesters, custom course names, and credits (1-8)',
+      'Add dynamic subjects and calculate your GPA seamlessly',
+    ],
+  },
+  {
+    icon: Cloud,
+    title: 'Cloud Sync',
+    description:
+      'Sign in with Google to sync your data across devices and protect your custom structures.',
+    tips: [
+      'Access your data safely from any device',
+      'Automatically merge local session data upon sign-in',
+      'Keep your custom courses protected on your private cloud profile',
     ],
   },
 ]
