@@ -407,6 +407,13 @@ const MainPage = () => {
                     if (isGuest) {
                       setShowAnalyticsDialog(true)
                     } else if (isAuthenticated) {
+                      if (semesters.length === 0) {
+                        toast.error(
+                          "Please calculate and save at least one semester's grades first to generate GPA progress analytics.",
+                          { duration: 4000 }
+                        )
+                        return
+                      }
                       setShowAnalytics(true)
                     }
                   }}
