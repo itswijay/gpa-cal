@@ -329,16 +329,4 @@ export async function getCustomDegree(
   return null
 }
 
-/**
- * Seed static data structure into Firestore globalCurricula/SUSL document
- */
-export async function seedStaticDataToFirestore(): Promise<void> {
-  const { subjectData } = await import('../data/subjects/index')
-  const universityRef = doc(db, 'globalCurricula', 'SUSL')
-  await setDoc(universityRef, {
-    name: 'Sabaragamuwa University of Sri Lanka',
-    shortName: 'SUSL',
-    faculties: subjectData,
-    updatedAt: serverTimestamp(),
-  })
-}
+

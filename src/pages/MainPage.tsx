@@ -22,7 +22,7 @@ import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
 import { Spinner } from '../components/ui/spinner'
 import { GPAChart } from '../components/analytics/GPAChart'
-import { deleteSemesterData, seedStaticDataToFirestore } from '../firebase/firestore'
+import { deleteSemesterData } from '../firebase/firestore'
 
 type Grade = {
   gpa: number
@@ -459,34 +459,7 @@ const MainPage = () => {
               </motion.div>
             )}
 
-            {/* Developer Seeding Tools (Visible only in local development) */}
-            {import.meta.env.DEV && (
-              <div className="mt-12 p-4 border border-dashed border-yellow-500/20 bg-yellow-500/5 rounded-xl flex flex-col items-center gap-3 max-w-md mx-auto shadow-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
-                  <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">
-                    Developer Admin Seeding Tools
-                  </p>
-                </div>
-                <p className="text-center text-[11px] text-muted-foreground">
-                  Populate your Cloud Firestore database with the preloaded Sabaragamuwa University (SUSL) subject structures with one click.
-                </p>
-                <button
-                  onClick={async () => {
-                    try {
-                      await seedStaticDataToFirestore()
-                      toast.success('Database seeded successfully with SUSL static data!')
-                    } catch (err) {
-                      console.error('Seeding error:', err)
-                      toast.error('Failed to seed database. Verify Firestore Rules / credentials.')
-                    }
-                  }}
-                  className="text-xs border border-yellow-500/40 hover:border-yellow-500 text-yellow-500 hover:bg-yellow-500/10 px-4 py-2 rounded-lg font-semibold transition-all shadow-sm active:scale-95"
-                >
-                  Seed globalCurricula/SUSL Document
-                </button>
-              </div>
-            )}
+
           </div>
         </div>
       </main>
