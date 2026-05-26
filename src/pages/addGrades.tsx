@@ -53,6 +53,12 @@ function Grades() {
       return
     }
 
+    // If they already created a custom degree, let them manage/edit it at any time!
+    if (customDegree) {
+      navigate('/custom-degree')
+      return
+    }
+
     // Check if the user already has saved semesters under preloaded faculties
     const hasPreloadedData =
       firebaseData.length > 0 &&

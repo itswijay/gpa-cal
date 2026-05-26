@@ -275,17 +275,14 @@ export default function CustomDegreePage() {
         }
       })
 
-      // If it is suggested, and we don't have an approved status, keep/set status to pending
-      const finalStatus = (isSuggested && suggestionStatus !== 'approved') ? 'pending' : suggestionStatus
-
       const customDegreeData: CustomDegreeData = {
         degreeName: degreeName.trim(),
         universityName: universityName.trim() || undefined,
         universityShort: universityShort.trim() || undefined,
         facultyName: facultyName.trim() || undefined,
         isSuggested,
-        suggestionStatus: isSuggested ? finalStatus : undefined,
-        rejectionReason: isSuggested ? rejectionReason : undefined,
+        suggestionStatus: isSuggested ? 'pending' : undefined,
+        rejectionReason: isSuggested ? undefined : rejectionReason,
         suggestionId: suggestionId || undefined,
         semesters: mappedSemesters,
       }
@@ -464,12 +461,12 @@ export default function CustomDegreePage() {
                     checked={isSuggested}
                     onChange={(e) => {
                       setIsSuggested(e.target.checked)
-                      if (e.target.checked && suggestionStatus === 'rejected') {
+                      if (e.target.checked && (suggestionStatus === 'rejected' || suggestionStatus === 'approved')) {
                         setSuggestionStatus('pending')
                       }
                     }}
                     className="h-5 w-5 rounded border-border text-primary focus:ring-primary bg-muted cursor-pointer"
-                    disabled={isSaving || suggestionStatus === 'approved'}
+                    disabled={isSaving}
                   />
                 </div>
               </div>
