@@ -381,7 +381,7 @@ function Grades() {
     ) {
       return []
     }
-    return Object.keys(
+    const keys = Object.keys(
       (resolvedCurricula[universitySelected]?.faculties[facultySelected]?.[degreeSelected] as Record<
         string,
         SemesterSubjects
@@ -390,6 +390,13 @@ function Grades() {
       (sem) =>
         !usedSemesters.includes(sem) || (isEditing && sem === semSelected)
     )
+
+    // Sort sem keys in ascending order
+    const getSemNumber = (name: string): number => {
+      const num = name.match(/\d+/)
+      return num ? parseInt(num[0], 10) : 999
+    }
+    return keys.sort((a, b) => getSemNumber(a) - getSemNumber(b))
   }, [resolvedCurricula, universitySelected, facultySelected, degreeSelected, usedSemesters, isEditing, semSelected])
 
   useEffect(() => {
