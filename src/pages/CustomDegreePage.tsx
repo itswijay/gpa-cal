@@ -18,6 +18,7 @@ import type { SemesterMap, Subject } from '../data/types'
 import { Spinner } from '../components/ui/spinner'
 import { db } from '../firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
+import { subjectData } from '../data/subjects/index'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,8 +45,10 @@ export default function CustomDegreePage() {
   const [universityName, setUniversityName] = useState('')
   const [universityShort, setUniversityShort] = useState('')
   const [facultyName, setFacultyName] = useState('')
-  const [preloadedUniversities, setPreloadedUniversities] = useState<Array<{ shortName: string; name: string }>>([])
+  const [preloadedUniversities, setPreloadedUniversities] = useState<Array<{ shortName: string; name: string; faculties: string[] }>>([])
   const [selectedUniversityOption, setSelectedUniversityOption] = useState<string>('')
+  const [preloadedFaculties, setPreloadedFaculties] = useState<string[]>([])
+  const [selectedFacultyOption, setSelectedFacultyOption] = useState<string>('')
   const [isSuggested, setIsSuggested] = useState(false)
   const [suggestionStatus, setSuggestionStatus] = useState<'pending' | 'approved' | 'rejected' | 'delete_pending'>('pending')
   const [rejectionReason, setRejectionReason] = useState('')
@@ -144,26 +147,37 @@ export default function CustomDegreePage() {
   useEffect(() => {
     async function loadAllUniversities() {
       try {
-        const uniMap: Record<string, string> = {
-          SUSL: 'Sabaragamuwa University of Sri Lanka',
+        const uniMap: Record<string, { name: string; faculties: string[] }> = {
+          SUSL: {
+            name: 'Sabaragamuwa University of Sri Lanka',
+            faculties: Object.keys(subjectData || {}),
+          },
         }
 
         const querySnapshot = await getDocs(collection(db, 'globalCurricula'))
         querySnapshot.docs.forEach((doc) => {
           const data = doc.data()
           if (data.shortName) {
-            uniMap[data.shortName.toUpperCase()] = data.name || data.shortName
+            uniMap[data.shortName.toUpperCase()] = {
+              name: data.name || data.shortName,
+              faculties: Object.keys(data.faculties || {}),
+            }
           }
         })
 
-        const list = Object.entries(uniMap).map(([short, full]) => ({
+        const list = Object.entries(uniMap).map(([short, details]) => ({
           shortName: short,
-          name: full,
+          name: details.name,
+          faculties: details.faculties,
         }))
         setPreloadedUniversities(list)
       } catch (err) {
         console.error('Failed to load universities list:', err)
-        setPreloadedUniversities([{ shortName: 'SUSL', name: 'Sabaragamuwa University of Sri Lanka' }])
+        setPreloadedUniversities([{
+          shortName: 'SUSL',
+          name: 'Sabaragamuwa University of Sri Lanka',
+          faculties: Object.keys(subjectData || {}),
+        }])
       }
     }
     loadAllUniversities()
@@ -254,14 +268,31 @@ export default function CustomDegreePage() {
   useEffect(() => {
     if (universityShort && preloadedUniversities.length > 0) {
       const uShort = universityShort.toUpperCase().trim()
-      const existsInPreloaded = preloadedUniversities.some(uni => uni.shortName === uShort)
-      if (existsInPreloaded) {
+      const matchedUni = preloadedUniversities.find(uni => uni.shortName === uShort)
+      
+      if (matchedUni) {
         setSelectedUniversityOption(uShort)
+        setPreloadedFaculties(matchedUni.faculties || [])
+        
+        // Check if the loaded faculty matches one of the preloaded faculties
+        if (facultyName) {
+          const matchedFaculty = (matchedUni.faculties || []).find(
+            (fac) => fac.toLowerCase().trim() === facultyName.toLowerCase().trim()
+          )
+          if (matchedFaculty) {
+            setSelectedFacultyOption(matchedFaculty)
+            setFacultyName(matchedFaculty) // normalize casing
+          } else {
+            setSelectedFacultyOption('custom')
+          }
+        }
       } else {
         setSelectedUniversityOption('custom')
+        setPreloadedFaculties([])
+        setSelectedFacultyOption('custom')
       }
     }
-  }, [preloadedUniversities, universityShort])
+  }, [preloadedUniversities, universityShort, facultyName])
 
   const handleAddSemester = () => {
     const nextSemNumber = semesters.length + 1
@@ -536,6 +567,9 @@ export default function CustomDegreePage() {
                           setSelectedUniversityOption(uni.shortName)
                           setUniversityShort(uni.shortName)
                           setUniversityName(uni.name)
+                          setPreloadedFaculties(uni.faculties || [])
+                          setSelectedFacultyOption('')
+                          setFacultyName('')
                         }}
                         className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
                       >
@@ -554,6 +588,9 @@ export default function CustomDegreePage() {
                         setSelectedUniversityOption('custom')
                         setUniversityShort('')
                         setUniversityName('')
+                        setPreloadedFaculties([])
+                        setSelectedFacultyOption('custom')
+                        setFacultyName('')
                       }}
                       className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
                     >
@@ -603,6 +640,56 @@ export default function CustomDegreePage() {
                 </div>
               </div>
 
+              {/* Faculty Selector Dropdown */}
+              {preloadedFaculties.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="facultySelector" className="text-sm font-semibold text-foreground">
+                    Select Faculty
+                  </Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        id="facultySelector"
+                        variant="outline"
+                        className="w-full justify-between bg-muted/50 border-border hover:bg-accent text-foreground font-semibold h-11"
+                        disabled={isSaving}
+                      >
+                        <span className="truncate">
+                          {selectedFacultyOption === 'custom'
+                            ? 'Other / Custom Faculty'
+                            : selectedFacultyOption || 'Choose a Faculty'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 ml-2 opacity-70 shrink-0" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[calc(100vw-3rem)] sm:w-[48rem] max-w-[50rem] bg-card border-border max-h-[300px] overflow-y-auto">
+                      {preloadedFaculties.map((fac) => (
+                        <DropdownMenuItem
+                          key={fac}
+                          onSelect={() => {
+                            setSelectedFacultyOption(fac)
+                            setFacultyName(fac)
+                          }}
+                          className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
+                        >
+                          {fac}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setSelectedFacultyOption('custom')
+                          setFacultyName('')
+                        }}
+                        className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Custom / New Faculty
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="facultyName" className="text-sm font-semibold text-foreground">
@@ -613,8 +700,15 @@ export default function CustomDegreePage() {
                     placeholder="e.g. Faculty of Computing"
                     value={facultyName}
                     onChange={(e) => setFacultyName(e.target.value)}
-                    className="bg-muted/50 border-border h-11"
-                    disabled={isSaving}
+                    className={`bg-muted/50 border-border h-11 transition-all ${
+                      preloadedFaculties.length > 0 && selectedFacultyOption !== 'custom' && selectedFacultyOption !== ''
+                        ? 'opacity-70 bg-muted cursor-not-allowed font-medium'
+                        : ''
+                    }`}
+                    disabled={
+                      isSaving || 
+                      (preloadedFaculties.length > 0 && selectedFacultyOption !== 'custom' && selectedFacultyOption !== '')
+                    }
                     maxLength={100}
                   />
                 </div>
