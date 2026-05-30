@@ -7,7 +7,13 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
-import { saveCustomDegree, getCustomDegree, type CustomDegreeData } from '../firebase/firestore'
+import {
+  saveCustomDegree,
+  getCustomDegree,
+  deleteCustomDegree,
+  suggestCustomDegreeDeletion,
+  type CustomDegreeData
+} from '../firebase/firestore'
 import type { SemesterMap, Subject } from '../data/types'
 import { Spinner } from '../components/ui/spinner'
 import {
@@ -37,7 +43,7 @@ export default function CustomDegreePage() {
   const [universityShort, setUniversityShort] = useState('')
   const [facultyName, setFacultyName] = useState('')
   const [isSuggested, setIsSuggested] = useState(false)
-  const [suggestionStatus, setSuggestionStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [suggestionStatus, setSuggestionStatus] = useState<'pending' | 'approved' | 'rejected' | 'delete_pending'>('pending')
   const [rejectionReason, setRejectionReason] = useState('')
   const [suggestionId, setSuggestionId] = useState('')
   const [semesters, setSemesters] = useState<DynamicSemester[]>([
@@ -49,6 +55,86 @@ export default function CustomDegreePage() {
   ])
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingExisting, setIsLoadingExisting] = useState(true)
+
+  // Deletion Dialog States
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [isSuggestDeleteOpen, setIsSuggestDeleteOpen] = useState(false)
+  const [deletionReasonInput, setDeletionReasonInput] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteProgram = async () => {
+    if (!user) return
+    setIsDeleting(true)
+    const loadToast = toast.loading('Deleting your custom degree...')
+    try {
+      await deleteCustomDegree(user.uid, suggestionId || undefined)
+      toast.success('Custom degree completely deleted!', { id: loadToast })
+      setIsDeleteConfirmOpen(false)
+      navigate('/addGrades')
+    } catch (error) {
+      console.error('Delete failed:', error)
+      toast.error('Failed to delete program. Try again later.', { id: loadToast })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleSuggestDeletionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !suggestionId) return
+    if (!deletionReasonInput.trim()) {
+      toast.error('Please enter a deletion reason.')
+      return
+    }
+
+    setIsDeleting(true)
+    const loadToast = toast.loading('Submitting deletion request...')
+    try {
+      // Map local dynamic state into SemesterMap schema
+      const mappedSemesters: SemesterMap = {}
+      semesters.forEach((sem) => {
+        const subjectsList: Subject[] = sem.subjects.map((sub) => ({
+          code: sub.code.trim(),
+          name: sub.name.trim(),
+          credits: Number(sub.credits),
+        }))
+        mappedSemesters[sem.name] = {
+          core: subjectsList,
+          electiveCreditsRequired: 0,
+        }
+      })
+
+      const customDegreeData: CustomDegreeData = {
+        degreeName: degreeName.trim(),
+        universityName: universityName.trim() || undefined,
+        universityShort: universityShort.trim() || undefined,
+        facultyName: facultyName.trim() || undefined,
+        isSuggested: true,
+        suggestionStatus: 'delete_pending',
+        deletionReason: deletionReasonInput.trim(),
+        suggestionId,
+        semesters: mappedSemesters,
+      }
+
+      await suggestCustomDegreeDeletion(
+        user.uid,
+        suggestionId,
+        deletionReasonInput.trim(),
+        customDegreeData,
+        user.email || undefined
+      )
+
+      toast.success('Deletion suggestion submitted for admin review!', { id: loadToast })
+      setIsSuggestDeleteOpen(false)
+      setDeletionReasonInput('')
+      navigate('/addGrades')
+    } catch (error) {
+      console.error('Suggest deletion failed:', error)
+      toast.error('Failed to suggest deletion.', { id: loadToast })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Redirect guest users back
   useEffect(() => {
@@ -690,28 +776,54 @@ export default function CustomDegreePage() {
 
             {/* Semester List Actions */}
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card border border-border rounded-xl p-6 shadow-sm">
-              <Button
-                variant="outline"
-                onClick={handleAddSemester}
-                disabled={isSaving}
-                className="w-full sm:w-auto hover:bg-accent flex items-center gap-2"
-              >
-                <Plus className="h-5 w-5 text-primary" />
-                Add Semester Block
-              </Button>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={handleAddSemester}
+                  disabled={isSaving || isDeleting}
+                  className="w-full sm:w-auto hover:bg-accent flex items-center gap-2"
+                >
+                  <Plus className="h-5 w-5 text-primary" />
+                  Add Semester Block
+                </Button>
+
+                {/* If they have already saved a custom degree, show the delete option */}
+                {suggestionId && (
+                  <Button
+                    variant="destructive"
+                    type="button"
+                    onClick={() => {
+                      if (suggestionStatus === 'approved') {
+                        setIsSuggestDeleteOpen(true)
+                      } else {
+                        setIsDeleteConfirmOpen(true)
+                      }
+                    }}
+                    disabled={isSaving || isDeleting || suggestionStatus === 'delete_pending'}
+                    className="bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-500 font-semibold flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {suggestionStatus === 'approved' 
+                      ? 'Suggest Deletion' 
+                      : suggestionStatus === 'delete_pending' 
+                      ? 'Deletion Pending' 
+                      : 'Delete Program'}
+                  </Button>
+                )}
+              </div>
 
               <div className="flex gap-4 w-full sm:w-auto">
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/addGrades')}
-                  disabled={isSaving}
+                  disabled={isSaving || isDeleting}
                   className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveProgram}
-                  disabled={isSaving}
+                  disabled={isSaving || isDeleting || suggestionStatus === 'delete_pending'}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 shadow-sm font-semibold h-10 px-5"
                 >
                   {isSaving ? (
@@ -735,6 +847,106 @@ export default function CustomDegreePage() {
       <footer className="w-full text-center text-xs text-muted-foreground bg-background py-2 border-t border-border z-50 opacity-40">
         Developed by Toran
       </footer>
+
+      {/* 1. DELETE CONFIRMATION DIALOG */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card border border-border rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+            >
+              <div className="flex items-center gap-3 text-red-500">
+                <AlertCircle className="h-6 w-6 shrink-0" />
+                <h3 className="text-lg font-bold">Delete Custom Program?</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Are you sure you want to completely delete your custom degree program template? This action is permanent and cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  disabled={isDeleting}
+                  className="font-semibold text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteProgram}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs flex items-center gap-1.5"
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes, Delete Program'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. SUGGEST DELETION DIALOG */}
+      <AnimatePresence>
+        {isSuggestDeleteOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card border border-border rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+            >
+              <form onSubmit={handleSuggestDeletionSubmit}>
+                <div className="flex items-center gap-3 text-red-500">
+                  <AlertCircle className="h-6 w-6 shrink-0" />
+                  <h3 className="text-lg font-bold">Request Public Deletion</h3>
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2 leading-relaxed">
+                  This custom program has been approved and is public. To request its removal from the public database catalog, please enter a valid deletion reason:
+                </p>
+                <div className="mt-3">
+                  <textarea
+                    className="w-full min-h-[100px] p-3 text-xs bg-muted/30 border border-border rounded-xl focus:border-red-500/50 focus:ring-1 focus:ring-red-500 outline-none transition-all placeholder:text-muted-foreground/60"
+                    placeholder="e.g. This syllabus is obsolete. A new academic curriculum has replaced it."
+                    value={deletionReasonInput}
+                    onChange={(e) => setDeletionReasonInput(e.target.value)}
+                    required
+                    disabled={isDeleting}
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsSuggestDeleteOpen(false)
+                      setDeletionReasonInput('')
+                    }}
+                    disabled={isDeleting}
+                    className="font-semibold text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="destructive"
+                    size="sm"
+                    disabled={isDeleting}
+                    className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs"
+                  >
+                    {isDeleting ? 'Submitting...' : 'Submit Request'}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

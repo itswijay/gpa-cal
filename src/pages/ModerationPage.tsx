@@ -14,7 +14,8 @@ import {
   Calendar,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Trash2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
@@ -22,6 +23,8 @@ import {
   getCurriculaSuggestions,
   approveCurriculumSuggestion,
   rejectCurriculumSuggestion,
+  approveCurriculumDeletion,
+  rejectCurriculumDeletion,
   type CurriculumSuggestion
 } from '../firebase/firestore'
 import { Button } from '../components/ui/button'
@@ -44,7 +47,7 @@ export default function ModerationPage() {
 
   const [suggestions, setSuggestions] = useState<CurriculumSuggestion[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'delete_pending'>('pending')
   
   // Selection & Modal States
   const [selectedSuggestion, setSelectedSuggestion] = useState<CurriculumSuggestion | null>(null)
@@ -85,15 +88,21 @@ export default function ModerationPage() {
   // Handlers
   const handleApprove = async (suggestion: CurriculumSuggestion) => {
     setIsSubmitting(true)
-    const loadToast = toast.loading(`Approving ${suggestion.degreeName} into database...`)
+    const isDeletionRequest = suggestion.status === 'delete_pending'
+    const loadToast = toast.loading(isDeletionRequest ? 'Wiping curriculum out of database...' : `Approving ${suggestion.degreeName} into database...`)
     try {
-      await approveCurriculumSuggestion(suggestion)
-      toast.success(`${suggestion.degreeName} successfully merged and approved!`, { id: loadToast })
+      if (isDeletionRequest) {
+        await approveCurriculumDeletion(suggestion)
+        toast.success(`Curriculum "${suggestion.degreeName}" successfully deleted from catalog!`, { id: loadToast })
+      } else {
+        await approveCurriculumSuggestion(suggestion)
+        toast.success(`${suggestion.degreeName} successfully merged and approved!`, { id: loadToast })
+      }
       setIsPreviewOpen(false)
       setSelectedSuggestion(null)
       await loadSuggestions()
     } catch (err) {
-      console.error('Approval failed:', err)
+      console.error('Action failed:', err)
       toast.error('Database write error. Check security rules.', { id: loadToast })
     } finally {
       setIsSubmitting(false)
@@ -104,22 +113,28 @@ export default function ModerationPage() {
     e.preventDefault()
     if (!selectedSuggestion) return
     if (!rejectionReason.trim()) {
-      toast.error('Please enter a feedback reason for the developer.')
+      toast.error('Please enter a feedback reason.')
       return
     }
 
     setIsSubmitting(true)
-    const loadToast = toast.loading('Sending moderation note...')
+    const isDeletionRequest = selectedSuggestion.status === 'delete_pending'
+    const loadToast = toast.loading(isDeletionRequest ? 'Sending deletion rejection feedback...' : 'Sending moderation note...')
     try {
-      await rejectCurriculumSuggestion(selectedSuggestion.id, selectedSuggestion.suggestedBy, rejectionReason.trim())
-      toast.success('Suggestion rejected. Feedback sent to developer.', { id: loadToast })
+      if (isDeletionRequest) {
+        await rejectCurriculumDeletion(selectedSuggestion.id, selectedSuggestion.suggestedBy, rejectionReason.trim())
+        toast.success('Deletion request rejected. Feedback sent to developer.', { id: loadToast })
+      } else {
+        await rejectCurriculumSuggestion(selectedSuggestion.id, selectedSuggestion.suggestedBy, rejectionReason.trim())
+        toast.success('Suggestion rejected. Feedback sent to developer.', { id: loadToast })
+      }
       setIsRejectOpen(false)
       setSelectedSuggestion(null)
       setRejectionReason('')
       await loadSuggestions()
     } catch (err) {
       console.error('Rejection failed:', err)
-      toast.error('Failed to submit moderation note.', { id: loadToast })
+      toast.error('Failed to submit moderation feedback.', { id: loadToast })
     } finally {
       setIsSubmitting(false)
     }
@@ -172,14 +187,14 @@ export default function ModerationPage() {
       <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
         <div className="flex flex-col gap-6">
           {/* Dashboard Summary Card */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="p-4 bg-card border border-border rounded-xl flex items-center gap-4">
               <div className="p-3 bg-yellow-500/10 rounded-lg text-yellow-500">
                 <ShieldAlert className="h-6 w-6 animate-pulse" />
               </div>
               <div>
-                <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Pending Approval</h4>
-                <p className="text-2xl font-bold">{suggestions.filter(s => s.status === 'pending').length}</p>
+                <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Pending</h4>
+                <p className="text-xl sm:text-2xl font-bold">{suggestions.filter(s => s.status === 'pending').length}</p>
               </div>
             </div>
 
@@ -189,7 +204,7 @@ export default function ModerationPage() {
               </div>
               <div>
                 <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Approved</h4>
-                <p className="text-2xl font-bold">{suggestions.filter(s => s.status === 'approved').length}</p>
+                <p className="text-xl sm:text-2xl font-bold">{suggestions.filter(s => s.status === 'approved').length}</p>
               </div>
             </div>
 
@@ -199,14 +214,24 @@ export default function ModerationPage() {
               </div>
               <div>
                 <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Rejected</h4>
-                <p className="text-2xl font-bold">{suggestions.filter(s => s.status === 'rejected').length}</p>
+                <p className="text-xl sm:text-2xl font-bold">{suggestions.filter(s => s.status === 'rejected').length}</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-card border border-border rounded-xl flex items-center gap-4">
+              <div className="p-3 bg-rose-500/10 rounded-lg text-rose-500">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Deletion Req</h4>
+                <p className="text-xl sm:text-2xl font-bold">{suggestions.filter(s => s.status === 'delete_pending').length}</p>
               </div>
             </div>
           </div>
 
           {/* Filtering Tabs */}
-          <div className="flex border-b border-border bg-card/30 p-1 rounded-lg self-start gap-1">
-            {(['pending', 'approved', 'rejected'] as const).map((tab) => (
+          <div className="flex border-b border-border bg-card/30 p-1 rounded-lg self-start gap-1 flex-wrap">
+            {(['pending', 'approved', 'rejected', 'delete_pending'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -216,7 +241,7 @@ export default function ModerationPage() {
                     : 'text-muted-foreground hover:bg-accent/40'
                 }`}
               >
-                {tab}
+                {tab === 'delete_pending' ? 'Deletion Requests' : tab}
               </button>
             ))}
           </div>
@@ -280,6 +305,14 @@ export default function ModerationPage() {
                         </div>
                       </div>
 
+                      {/* Deletion Request Reason */}
+                      {suggestion.status === 'delete_pending' && suggestion.deletionReason && (
+                        <div className="mt-4 p-3 bg-rose-500/5 border border-rose-500/20 rounded-lg text-xs text-rose-500">
+                          <span className="font-bold block uppercase tracking-wider mb-1">Reason for Deletion Request:</span>
+                          <p>{suggestion.deletionReason}</p>
+                        </div>
+                      )}
+
                       {/* Rejection Note */}
                       {suggestion.status === 'rejected' && suggestion.rejectionReason && (
                         <div className="mt-4 p-3 bg-red-500/5 border border-red-500/10 rounded-lg text-xs text-red-400">
@@ -327,6 +360,33 @@ export default function ModerationPage() {
                             title="Approve Curriculum"
                           >
                             <Check className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+
+                      {suggestion.status === 'delete_pending' && (
+                        <>
+                          <Button
+                            onClick={() => {
+                              setSelectedSuggestion(suggestion)
+                              setIsRejectOpen(true)
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-500/30 hover:bg-gray-500/10 text-foreground p-2 h-9 w-9"
+                            title="Reject Deletion / Keep Program"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleApprove(suggestion)}
+                            disabled={isSubmitting}
+                            variant="destructive"
+                            size="sm"
+                            className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-500 p-2 h-9 w-9"
+                            title="Approve Deletion"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
                       )}
@@ -495,6 +555,31 @@ export default function ModerationPage() {
                 </Button>
               </>
             )}
+
+            {selectedSuggestion && selectedSuggestion.status === 'delete_pending' && (
+              <>
+                <Button
+                  onClick={() => {
+                    setIsPreviewOpen(false)
+                    setIsRejectOpen(true)
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs font-semibold border-gray-500/30 hover:bg-gray-500/10 text-foreground"
+                >
+                  Reject Deletion
+                </Button>
+                <Button
+                  onClick={() => handleApprove(selectedSuggestion)}
+                  disabled={isSubmitting}
+                  variant="destructive"
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold"
+                >
+                  {isSubmitting ? 'Deleting...' : 'Approve Deletion'}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -506,10 +591,12 @@ export default function ModerationPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-bold text-red-500">
                 <AlertCircle className="h-5 w-5" />
-                Reject & Send Feedback
+                {selectedSuggestion?.status === 'delete_pending' ? 'Reject Deletion Request' : 'Reject & Send Feedback'}
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm">
-                Provide feedback to the student explaining what needs to be changed for approval.
+                {selectedSuggestion?.status === 'delete_pending'
+                  ? 'Provide a reason explaining to the student why this public curriculum cannot be deleted.'
+                  : 'Provide feedback to the student explaining what needs to be changed for approval.'}
               </DialogDescription>
             </DialogHeader>
 

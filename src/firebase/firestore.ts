@@ -22,8 +22,9 @@ export interface CustomDegreeData {
   degreeName: string
   semesters: SemesterMap
   isSuggested?: boolean
-  suggestionStatus?: 'pending' | 'approved' | 'rejected'
+  suggestionStatus?: 'pending' | 'approved' | 'rejected' | 'delete_pending'
   rejectionReason?: string
+  deletionReason?: string
   suggestionId?: string
   updatedAt?: unknown
 }
@@ -339,8 +340,9 @@ export interface CurriculumSuggestion {
   facultyName: string
   degreeName: string
   semesters: SemesterMap
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' | 'delete_pending'
   rejectionReason?: string
+  deletionReason?: string
   createdAt?: unknown
 }
 
@@ -369,10 +371,10 @@ export async function approveCurriculumSuggestion(
   const universityRef = doc(db, 'globalCurricula', uShort)
   const uniSnap = await getDoc(universityRef)
 
-  let faculties: Record<string, any> = {}
+  let faculties: Record<string, Record<string, SemesterMap>> = {}
   if (uniSnap.exists()) {
     const data = uniSnap.data()
-    faculties = data.faculties || {}
+    faculties = (data.faculties || {}) as Record<string, Record<string, SemesterMap>>
   }
 
   if (!faculties[suggestion.facultyName]) {
@@ -429,6 +431,120 @@ export async function rejectCurriculumSuggestion(
     updatedAt: serverTimestamp(),
   }, { merge: true })
 }
+
+/**
+ * Delete own custom degree configuration
+ */
+export async function deleteCustomDegree(
+  userId: string,
+  suggestionId?: string
+): Promise<void> {
+  const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  await deleteDoc(customDegreeRef)
+
+  if (suggestionId) {
+    const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
+    await deleteDoc(suggestionRef)
+  }
+}
+
+/**
+ * Suggest deletion of an already approved/public custom degree with a reason
+ */
+export async function suggestCustomDegreeDeletion(
+  userId: string,
+  suggestionId: string,
+  reason: string,
+  data: CustomDegreeData,
+  userEmail?: string
+): Promise<void> {
+  const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  await setDoc(customDegreeRef, {
+    suggestionStatus: 'delete_pending',
+    deletionReason: reason,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+
+  const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
+  await setDoc(suggestionRef, {
+    id: suggestionId,
+    suggestedBy: userId,
+    suggestedByEmail: userEmail || 'anonymous@mygpacal.com',
+    universityName: data.universityName || '',
+    universityShort: (data.universityShort || '').toUpperCase(),
+    facultyName: data.facultyName || '',
+    degreeName: data.degreeName,
+    semesters: data.semesters,
+    status: 'delete_pending',
+    deletionReason: reason,
+    createdAt: serverTimestamp(),
+  })
+}
+
+/**
+ * Approve deletion suggestion and completely wipe it out from public curricula and user profile
+ */
+export async function approveCurriculumDeletion(
+  suggestion: CurriculumSuggestion
+): Promise<void> {
+  const uShort = suggestion.universityShort.toUpperCase()
+  const universityRef = doc(db, 'globalCurricula', uShort)
+  const uniSnap = await getDoc(universityRef)
+
+  if (uniSnap.exists()) {
+    const data = uniSnap.data()
+    const faculties = data.faculties || {}
+
+    if (faculties[suggestion.facultyName] && faculties[suggestion.facultyName][suggestion.degreeName]) {
+      delete faculties[suggestion.facultyName][suggestion.degreeName]
+
+      // If a faculty has no more programs, clean it up completely
+      if (Object.keys(faculties[suggestion.facultyName]).length === 0) {
+        delete faculties[suggestion.facultyName]
+      }
+
+      await setDoc(universityRef, {
+        faculties: faculties,
+        updatedAt: serverTimestamp(),
+      }, { merge: true })
+    }
+  }
+
+  // Delete suggestions queue entry
+  const suggestionRef = doc(db, 'curriculaSuggestions', suggestion.id)
+  await deleteDoc(suggestionRef)
+
+  // Delete user custom degree document
+  const customDegreeRef = doc(db, 'users', suggestion.suggestedBy, 'customDegree', 'default')
+  await deleteDoc(customDegreeRef)
+}
+
+/**
+ * Reject deletion suggestion and restore status back to 'approved'
+ */
+export async function rejectCurriculumDeletion(
+  suggestionId: string,
+  userId: string,
+  feedback: string
+): Promise<void> {
+  // Restore suggestion status to approved in queue
+  const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
+  await setDoc(suggestionRef, {
+    status: 'approved',
+    deletionReason: null,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+
+  // Restore custom degree status to approved in user doc and show feedback reason
+  const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
+  await setDoc(customDegreeRef, {
+    suggestionStatus: 'approved',
+    deletionReason: null,
+    rejectionReason: feedback,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+}
+
 
 
 
