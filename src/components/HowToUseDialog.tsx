@@ -71,11 +71,11 @@ const steps = [
     icon: GraduationCap,
     title: 'Custom Degree Program',
     description:
-      "If your specific syllabus isn't preloaded, you can unlock our builder to structure your own dynamic curriculum!",
+      "Unlock our visual builder to structure a custom curriculum, extend preloaded programs with missing semesters, or edit existing degree structures!",
     tips: [
-      'Sign in to your account and click "Create Custom Degree" at the top-right',
-      'Define semesters, custom course names, and credits (1-8)',
-      'Add dynamic subjects and calculate your GPA seamlessly',
+      'Sign in and click "Create Custom Degree" at the top-right',
+      'Select any preloaded degree program to instantly auto-populate its existing semesters',
+      'Extend with new semesters, then toggle "Suggest for Public Database" to submit it for global review!',
     ],
   },
   {
