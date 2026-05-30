@@ -866,8 +866,8 @@ export default function CustomDegreePage() {
               </div>
 
               {/* Public Suggestion Toggle */}
-              <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="space-y-1">
+              <div className="pt-4 border-t border-border flex items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Label htmlFor="suggestToggle" className="text-sm font-semibold text-foreground cursor-pointer">
                       Suggest for Public Database
