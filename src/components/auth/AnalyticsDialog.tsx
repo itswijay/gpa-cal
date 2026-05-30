@@ -42,7 +42,7 @@ const features = [
 export function AnalyticsDialog({ open, onOpenChange }: AnalyticsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md scrollbar-none">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />

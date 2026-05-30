@@ -17,13 +17,13 @@ interface CustomDegreeAuthDialogProps {
 const benefits = [
   {
     icon: GraduationCap,
-    title: 'Custom Curriculum Builder',
-    description: 'Design and tailor degree program structures to perfectly match your university syllabus.',
+    title: 'Degree Extension & Builder',
+    description: 'Extend preloaded university programs with missing semesters or build your own from scratch.',
   },
   {
     icon: RefreshCw,
-    title: 'Secure Cloud Synchronization',
-    description: 'Save your custom programs to your secure account and edit your grades from any device.',
+    title: 'Secure Cloud Sync & Suggestion',
+    description: 'Save private degree structures to the cloud and suggest incomplete semesters to help the community.',
   },
   {
     icon: Sparkles,
@@ -40,14 +40,14 @@ const benefits = [
 export function CustomDegreeAuthDialog({ open, onOpenChange }: CustomDegreeAuthDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md scrollbar-none">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Unlock Custom Programs!
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Create an account or sign in to build your own degree curriculum.
+            Create an account or sign in to build custom degrees, extend preloaded programs, and suggest public curricula updates.
           </DialogDescription>
         </DialogHeader>
 
