@@ -1,8 +1,8 @@
-# 🤝 Contributing to GPA Calculator
+# Contributing to GPA Calculator
 
 Thank you for your interest in contributing to the GPA Cal! This guide will help you get started with contributing to the project, especially for adding new faculties and subjects.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
@@ -12,7 +12,7 @@ Thank you for your interest in contributing to the GPA Cal! This guide will help
 - [Testing](#testing)
 - [Pull Request Process](#pull-request-process)
 
-## 🤗 Code of Conduct
+## Code of Conduct
 
 This project follows a simple code of conduct:
 
@@ -21,7 +21,7 @@ This project follows a simple code of conduct:
 - Help others learn and grow
 - Keep discussions professional and on-topic
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -56,120 +56,27 @@ This project follows a simple code of conduct:
    npx tsc --noEmit
    ```
 
-## 📚 Adding New Faculties
+## Suggesting New Curricula & Semester Updates (No Code Needed!)
 
-This is the most common contribution type. Follow these steps carefully:
+Adding or expanding university curriculum is now completely **visual, dynamic, and code-free**! You no longer need to edit any TypeScript files or submit GitHub Pull Requests to add your curriculum. 
 
-### Step 1: Create Faculty Data File
+Follow these simple steps:
 
-1. Navigate to `src/data/subjects/`
-2. Create a new file: `yourFaculty.ts` (use camelCase, no spaces)
-3. Use this template:
+1. **Sign In:** Sign in with Google to enable cloud synchronization.
+2. **Access Creator:** Click on the **Custom Degree Creator** (`GraduationCap` icon) in the navigation menu.
+3. **Configure details:** 
+   * Select your **University** and **Faculty** (or select **"Add Custom / New"** to type new ones).
+   * Select your **Degree Program** (or select **"Add Custom / New"** to define a brand-new degree).
+4. **Auto-populate:** If the degree program is already preloaded in our database but has missing semesters (e.g. only Semesters 1-3 are defined), selecting the degree will **auto-populate** those existing semesters and subjects for you as editable fields!
+5. **Add/Edit Semesters:**
+   * Append missing semesters (e.g. click **"+ Add Semester"** to add Semester 4, 5, etc.).
+   * Modify or verify subjects, codes, and credit values in the list.
+6. **Submit Suggestion:** 
+   * Turn **ON** the toggle: **"Suggest this degree program for addition to the public university database"** at the bottom of the page.
+   * Click **Save Custom Degree**.
+7. **Admin Review:** Your suggested curriculum will be immediately dispatched to our secure **Admin Moderation Console**. Once an administrator verifies and approves your suggestion, it is instantly merged globally into our cloud catalog for all other students to use!
 
-```typescript
-import type { DegreeMap } from '../types'
-
-/**
- * [Your Faculty Name] Faculty Subject Data
- *
- * Guidelines:
- * - All subject codes must be unique within each degree program
- * - Use suffixes (A, B, C) for duplicate codes when the same subject code appears across multiple electives (e.g., FM4152A, FM4152B)
- * - Ensure electiveCreditsRequired matches available elective credits
- * - Test your additions before submitting PR
- *
- * Last updated: [Current Date]
- * Contributors: [Your Name]
- */
-export const yourFacultyData: DegreeMap = {
-  'Your Degree Name': {
-    'Semester 1': {
-      core: [
-        {
-          code: 'FAC101',
-          name: 'Subject Name',
-          credits: 3,
-        },
-        // Add more core subjects
-      ],
-      electives: [
-        {
-          code: 'FAC201A',
-          name: 'Elective Subject1',
-          credits: 3,
-        },
-        {
-          code: 'FAC201B',
-          name: 'Elective Subject2',
-          credits: 3,
-        },
-        // Add more electives
-      ],
-      electiveCreditsRequired: 3,
-    },
-    // Add more semesters
-  },
-  // Add more degrees
-}
-```
-
-### Step 2: Ensure Unique Subject Codes
-
-**⚠️ CRITICAL: All subject codes must be unique within each degree programs**
-
-1. Check existing codes within your faculty's degree programs to avoid duplicates
-
-2. If your codes conflict within the same degree program, append suffixes:
-   ```typescript
-   // If MATH101 already exists in the same degree, use:
-   { code: 'MATH101A', name: 'Mathematics I', credits: 4 }
-   { code: 'MATH101B', name: 'Advanced Mathematics', credits: 4 }
-   ```
-
-**Note**: The same subject code can exist in different faculties (e.g., CS101 in Computing and CS101 in Engineering), but must be unique within each degree program.
-
-### Step 3: Register Your Faculty
-
-1. Open `src/data/subjects/index.ts`
-2. Import your faculty:
-
-   ```typescript
-   import { yourFacultyData } from './yourFaculty'
-   ```
-
-3. Add to the export:
-   ```typescript
-   export const subjectData: FacultyMap = {
-     Computing: computing,
-     'Applied Sciences': appliedSciences,
-     'Management Studies': managementStudies,
-     'Your Faculty Name': yourFacultyData, // Add this line
-   }
-   ```
-
-### Step 4: Validation Checklist
-
-Before submitting, verify:
-
-- [ ] All subject codes are unique within each degree program
-- [ ] Each subject has `code`, `name`, and `credits`
-- [ ] `electiveCreditsRequired` ≤ total available elective credits
-- [ ] TypeScript compiles without errors: `npx tsc --noEmit`
-- [ ] App runs without errors: `npm run dev`
-- [ ] Your faculty appears in the dropdown
-- [ ] All semesters and subjects load correctly
-- [ ] GPA calculation works for your subjects
-
-### Step 5: Test Your Addition
-
-1. **Start development server**: `npm run dev`
-2. **Select your faculty** from the dropdown
-3. **Navigate through all degrees and semesters**
-4. **Add grades** for a complete semester
-5. **Verify GPA calculation** is correct
-6. **Test editing functionality**
-
-## 📝 Code Standards
+## Code Standards
 
 ### TypeScript
 
@@ -212,7 +119,7 @@ export const data = {
 }
 ```
 
-## 🔄 Development Workflow
+## Development Workflow
 
 ### Branch Naming
 
@@ -235,7 +142,7 @@ fix(data): resolve duplicate subject codes in Applied Sciences
 docs: add contributing guidelines for new faculties
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Manual Testing Steps
 
@@ -261,7 +168,7 @@ npm run lint
 npm run build
 ```
 
-## 🔀 Pull Request Process
+## Pull Request Process
 
 ### Before Submitting
 
@@ -279,95 +186,51 @@ Brief description of changes
 
 ## Type of Change
 
-- [ ] New faculty addition
-- [ ] Bug fix in existing data
+- [ ] New UI feature
+- [ ] Core calculation engine fix
+- [ ] UI / CSS Styling update
+- [ ] Bug fix
 - [ ] Documentation update
-
-## Faculty/Degree Added
-
-- Faculty: [Name]
-- Degrees: [List]
-- Total Subjects: [Count]
 
 ## Testing Checklist
 
-- [ ] TypeScript compiles without errors
-- [ ] All subjects have unique codes
-- [ ] Faculty appears in dropdown
-- [ ] GPA calculation works correctly
-- [ ] Data persists correctly
+- [ ] TypeScript compiles without errors (`npx tsc --noEmit`)
+- [ ] Linting checks pass successfully (`npm run lint`)
+- [ ] Local build generates successfully (`npm run build`)
+- [ ] Tested locally on mobile/desktop screens
 ```
 
 ### Review Process
 
-1. Automated checks must pass
-2. Manual review by maintainers
-3. Testing of the new faculty data
-4. Approval and merge
+1. Automated checks (linting, type-checking, build checks) must pass.
+2. Code review and feature approval by repository maintainers.
 
-## 🆘 Common Issues and Solutions
+## Common Issues and Solutions
 
-### Duplicate Subject Codes
+### TypeScript Compilation Errors
+* **Error:** `Type 'string' is not assignable to type 'number'`
+* **Solution:** Ensure all numeric values (credits, points, etc.) are strictly numbers, not string representations.
 
-```bash
-Error: Subject code 'MATH101' already exists in this degree program
-Solution: Use 'MATH101A', 'MATH101B', etc. within the same degree
-```
+### Theme / Styling Glitches
+* **Problem:** Styles look broken or inconsistent in light/dark mode.
+* **Solution:** Verify tailwind variables and custom CSS styles to ensure semantic standard values are used.
 
-### TypeScript Errors
+## Quick Reference
 
-```bash
-Error: Type 'string' is not assignable to type 'number'
-Solution: Ensure credits are numbers, not strings
-```
-
-### Missing Faculty in Dropdown
-
-```bash
-Problem: Faculty doesn't appear
-Solution: Check if you added it to src/data/subjects/index.ts
-```
-
-### GPA Calculation Issues
-
-```bash
-Problem: Wrong GPA calculated
-Solution: Verify credit values and grade point mappings
-```
-
-## 📞 Getting Help
-
-- **Documentation**: Check README.md and existing code
-- **Issues**: Open a GitHub issue with the "question" label
-- **Examples**: Look at existing faculty files for reference
-- **Code Review**: Submit a draft PR for early feedback
-
-## 🎯 Quick Reference
-
-### File Locations
-
-- **Subject data**: `src/data/subjects/[faculty].ts`
-- **Types**: `src/data/types.ts`
-- **Registration**: `src/data/subjects/index.ts`
-- **Grading**: `src/data/grading.ts`
-
-### Required Fields
-
-```typescript
-Subject {
-  code: string     // Unique within each degree program
-  name: string     // Official subject name
-  credits: number  // Credit value
-}
-```
+### Core Code Locations
+* **Authentication:** `src/hooks/useAuth.ts` and `src/contexts/AuthContext.tsx`
+* **Firestore Service:** `src/firebase/firestore.ts`
+* **Custom Degree Creator:** `src/pages/CustomDegreePage.tsx`
+* **Main Calculator UI:** `src/pages/addGrades.tsx`
+* **Types:** `src/data/types.ts`
+* **Grading Values:** `src/data/grading.ts`
 
 ### Testing Commands
-
 ```bash
-npm run dev          # Start development
-npx tsc --noEmit     # Type check
-npm run lint         # Code linting
-npm run build        # Build verification
+npm run dev          # Start development server
+npx tsc --noEmit     # Execute strict TypeScript type checks
+npm run lint         # Run ESLint checks
+npm run build        # Verify production compilation
 ```
 
 ---

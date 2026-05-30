@@ -262,14 +262,14 @@ Edit `src/data/grading.ts` to customize grade options and their point values. Th
 
 ### Extending Faculty and Degree Programs
 
-Add new faculty data to `src/data/subjects/` directory following the existing structure:
+Adding or updating university curricula is now completely **visual and code-free**! You do not need to edit any TypeScript files:
 
-1. Create a new TypeScript file (e.g., `newFaculty.ts`)
-2. Define subjects with semester organization
-3. Export from `src/data/subjects/index.ts`
-4. Update `subjectData` object to include new faculty
-
-Refer to existing faculty files for data structure specifications.
+1. Sign in to your account.
+2. Navigate to the **Custom Degree Creator** page.
+3. Select or create your University, Faculty, and Degree.
+4. Auto-populate existing preloaded semesters or add new ones dynamically.
+5. Toggle **"Suggest for Public Curricula"** to submit it to administrators.
+6. Once approved in the Moderation Console, your curriculum will instantly be available globally for all students!
 
 ---
 
@@ -303,15 +303,14 @@ npm run build
 
 ## Contributing
 
-We welcome contributions to improve GPA Calculator. Please review our [Contributing Guidelines](./CONTRIBUTING.md) for detailed information on:
+We welcome contributions to improve the GPA Calculator! We support two types of contributions:
 
-- Adding new faculties and degree programs
-- Development environment setup
-- Code standards and best practices
-- Testing requirements
-- Pull request procedures
+1. **Curriculum Additions / Updates (No Code Required):**
+   * If you want to add a new university, faculty, degree program, or missing semesters, please do it directly inside the app using the **Custom Degree Creator** page and toggling **"Suggest for Public Curricula"**!
+2. **Codebase Improvements (For Developers):**
+   * Review our [Contributing Guidelines](./CONTRIBUTING.md) for environment setup, code standards, and PR workflows.
 
-### Quick Start for Contributors
+### Quick Start for Developers
 
 1. Fork the repository on GitHub
 2. Create a feature branch: `git checkout -b feature/your-feature-name`
@@ -339,8 +338,8 @@ This project is maintained by the GPA Calculator community. For license informat
 
 ## Project Status
 
-**Current Version**: 3.0  
+**Current Version**: 4.0  
 **Development Status**: Active  
-**Last Updated**: December 2025
+**Last Updated**: May 2026
 
 This application is actively maintained with regular feature updates and bug fixes. The development roadmap includes additional faculty integrations, enhanced analytics capabilities, and expanded institutional support.
