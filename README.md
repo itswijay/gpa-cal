@@ -55,6 +55,14 @@ A comprehensive, clean and user-friendly GPA calculation and tracking applicatio
 
 ## Recent Updates
 
+### Version 4.0 - Custom Degree Builder, Collaborative Catalog, and Moderation Engine
+
+- **Visual Custom Degree Creator**: Fully interactive, visual degree and curriculum builder with drag-and-drop-like ease.
+- **Preloaded Catalog Auto-Population**: Instantly load and import any preloaded university degree program to append missing semesters, custom subjects, or edit details.
+- **Global Public Suggestion Engine**: Integrated collaborative workflow allowing users to toggle "Suggest for Public Database" and submit their curriculum suggestions.
+- **Admin Moderation Console**: Comprehensive visual moderation center for administrators to review, inspect, approve, reject with feedback, or safely delete public curriculum suggestions.
+- **Flawless UI & Mobile UX Optimizations**: Cleaned up mobile viewport constraints (side-by-side suggest toggle, scrollbar-free authorization modals) and introduced exact numerical ascending sorting (1, 2, 3... 8) for custom semesters and database dropdown lists.
+
 ### Version 3.0 - Cloud Integration and Enhanced Analytics
 
 - Firebase Firestore integration for cloud-based data synchronization
