@@ -45,10 +45,12 @@ export default function CustomDegreePage() {
   const [universityName, setUniversityName] = useState('')
   const [universityShort, setUniversityShort] = useState('')
   const [facultyName, setFacultyName] = useState('')
-  const [preloadedUniversities, setPreloadedUniversities] = useState<Array<{ shortName: string; name: string; faculties: string[] }>>([])
+  const [preloadedUniversities, setPreloadedUniversities] = useState<Array<{ shortName: string; name: string; faculties: Record<string, Record<string, SemesterMap>> }>>([])
   const [selectedUniversityOption, setSelectedUniversityOption] = useState<string>('')
   const [preloadedFaculties, setPreloadedFaculties] = useState<string[]>([])
   const [selectedFacultyOption, setSelectedFacultyOption] = useState<string>('')
+  const [preloadedDegrees, setPreloadedDegrees] = useState<string[]>([])
+  const [selectedDegreeOption, setSelectedDegreeOption] = useState<string>('')
   const [isSuggested, setIsSuggested] = useState(false)
   const [suggestionStatus, setSuggestionStatus] = useState<'pending' | 'approved' | 'rejected' | 'delete_pending'>('pending')
   const [rejectionReason, setRejectionReason] = useState('')
@@ -147,10 +149,10 @@ export default function CustomDegreePage() {
   useEffect(() => {
     async function loadAllUniversities() {
       try {
-        const uniMap: Record<string, { name: string; faculties: string[] }> = {
+        const uniMap: Record<string, { name: string; faculties: Record<string, Record<string, SemesterMap>> }> = {
           SUSL: {
             name: 'Sabaragamuwa University of Sri Lanka',
-            faculties: Object.keys(subjectData || {}),
+            faculties: subjectData as unknown as Record<string, Record<string, SemesterMap>>,
           },
         }
 
@@ -160,7 +162,7 @@ export default function CustomDegreePage() {
           if (data.shortName) {
             uniMap[data.shortName.toUpperCase()] = {
               name: data.name || data.shortName,
-              faculties: Object.keys(data.faculties || {}),
+              faculties: (data.faculties || {}) as Record<string, Record<string, SemesterMap>>,
             }
           }
         })
@@ -176,7 +178,7 @@ export default function CustomDegreePage() {
         setPreloadedUniversities([{
           shortName: 'SUSL',
           name: 'Sabaragamuwa University of Sri Lanka',
-          faculties: Object.keys(subjectData || {}),
+          faculties: subjectData as unknown as Record<string, Record<string, SemesterMap>>,
         }])
       }
     }
@@ -217,8 +219,17 @@ export default function CustomDegreePage() {
               }
             }
             
-            // Map Firestore SemesterMap back to our dynamic local state
-            const mappedSems: DynamicSemester[] = Object.entries(existing.semesters).map(([semName, semData], idx) => ({
+            // Map Firestore SemesterMap back to our dynamic local state (sorted ascending)
+            const getSemNumber = (name: string): number => {
+              const num = name.match(/\d+/)
+              return num ? parseInt(num[0], 10) : 999
+            }
+
+            const sortedEntries = Object.entries(existing.semesters).sort((a, b) => {
+              return getSemNumber(a[0]) - getSemNumber(b[0])
+            })
+
+            const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => ({
               id: `sem_${idx + 1}`,
               name: semName,
               subjects: (semData.core || []).map((sub) => ({
@@ -272,27 +283,47 @@ export default function CustomDegreePage() {
       
       if (matchedUni) {
         setSelectedUniversityOption(uShort)
-        setPreloadedFaculties(matchedUni.faculties || [])
+        const facNames = Object.keys(matchedUni.faculties || {})
+        setPreloadedFaculties(facNames)
         
         // Check if the loaded faculty matches one of the preloaded faculties
         if (facultyName) {
-          const matchedFaculty = (matchedUni.faculties || []).find(
+          const matchedFaculty = facNames.find(
             (fac) => fac.toLowerCase().trim() === facultyName.toLowerCase().trim()
           )
           if (matchedFaculty) {
             setSelectedFacultyOption(matchedFaculty)
             setFacultyName(matchedFaculty) // normalize casing
+            
+            const degNames = Object.keys(matchedUni.faculties[matchedFaculty] || {})
+            setPreloadedDegrees(degNames)
+            
+            if (degreeName) {
+              const matchedDegree = degNames.find(
+                (deg) => deg.toLowerCase().trim() === degreeName.toLowerCase().trim()
+              )
+              if (matchedDegree) {
+                setSelectedDegreeOption(matchedDegree)
+                setDegreeName(matchedDegree) // normalize casing
+              } else {
+                setSelectedDegreeOption('custom')
+              }
+            }
           } else {
             setSelectedFacultyOption('custom')
+            setPreloadedDegrees([])
+            setSelectedDegreeOption('custom')
           }
         }
       } else {
         setSelectedUniversityOption('custom')
         setPreloadedFaculties([])
         setSelectedFacultyOption('custom')
+        setPreloadedDegrees([])
+        setSelectedDegreeOption('custom')
       }
     }
-  }, [preloadedUniversities, universityShort, facultyName])
+  }, [preloadedUniversities, universityShort, facultyName, degreeName])
 
   const handleAddSemester = () => {
     const nextSemNumber = semesters.length + 1
@@ -530,8 +561,16 @@ export default function CustomDegreePage() {
               className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-sm text-blue-600 dark:text-blue-400 flex items-start gap-3"
             >
               <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold">Private Curricula Mode</span>: Your custom degree program is saved securely in your private cloud profile. It is only accessible to you and will not interfere with other students' preloaded data lists.
+              <div className="space-y-2">
+                <div>
+                  <span className="font-semibold">Private Curricula Mode</span>: Your custom degree program is saved securely in your private cloud profile. It is only accessible to you and will not interfere with other students' preloaded data lists.
+                </div>
+                <div className="text-xs bg-blue-500/5 border border-blue-500/10 rounded-md p-2 flex items-center gap-1.5 mt-1 text-blue-700/80 dark:text-blue-300/80">
+                  <span className="text-sm">💡</span>
+                  <span>
+                    <strong>Pro Tip:</strong> If this curriculum is missing or has incomplete semesters in the public database, you can toggle <strong>"Suggest for Public Curricula"</strong> below to submit your updates for admin review!
+                  </span>
+                </div>
               </div>
             </motion.div>
 
@@ -567,9 +606,13 @@ export default function CustomDegreePage() {
                           setSelectedUniversityOption(uni.shortName)
                           setUniversityShort(uni.shortName)
                           setUniversityName(uni.name)
-                          setPreloadedFaculties(uni.faculties || [])
+                          const facNames = Object.keys(uni.faculties || {})
+                          setPreloadedFaculties(facNames)
                           setSelectedFacultyOption('')
                           setFacultyName('')
+                          setPreloadedDegrees([])
+                          setSelectedDegreeOption('')
+                          setDegreeName('')
                         }}
                         className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
                       >
@@ -591,6 +634,9 @@ export default function CustomDegreePage() {
                         setPreloadedFaculties([])
                         setSelectedFacultyOption('custom')
                         setFacultyName('')
+                        setPreloadedDegrees([])
+                        setSelectedDegreeOption('custom')
+                        setDegreeName('')
                       }}
                       className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
                     >
@@ -669,6 +715,17 @@ export default function CustomDegreePage() {
                           onSelect={() => {
                             setSelectedFacultyOption(fac)
                             setFacultyName(fac)
+                            
+                            // Get preloaded degrees under this faculty
+                            const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
+                            if (uni) {
+                              const degNames = Object.keys(uni.faculties[fac] || {})
+                              setPreloadedDegrees(degNames)
+                            } else {
+                              setPreloadedDegrees([])
+                            }
+                            setSelectedDegreeOption('')
+                            setDegreeName('')
                           }}
                           className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
                         >
@@ -679,11 +736,94 @@ export default function CustomDegreePage() {
                         onSelect={() => {
                           setSelectedFacultyOption('custom')
                           setFacultyName('')
+                          setPreloadedDegrees([])
+                          setSelectedDegreeOption('custom')
+                          setDegreeName('')
                         }}
                         className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         Add Custom / New Faculty
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+
+              {/* Degree Selector Dropdown */}
+              {preloadedDegrees.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="degreeSelector" className="text-sm font-semibold text-foreground">
+                    Select Degree Program
+                  </Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        id="degreeSelector"
+                        variant="outline"
+                        className="w-full justify-between bg-muted/50 border-border hover:bg-accent text-foreground font-semibold h-11"
+                        disabled={isSaving}
+                      >
+                        <span className="truncate">
+                          {selectedDegreeOption === 'custom'
+                            ? 'Other / Custom Degree Program'
+                            : selectedDegreeOption || 'Choose a Degree Program'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 ml-2 opacity-70 shrink-0" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[calc(100vw-3rem)] sm:w-[48rem] max-w-[50rem] bg-card border-border max-h-[300px] overflow-y-auto">
+                      {preloadedDegrees.map((deg) => (
+                        <DropdownMenuItem
+                          key={deg}
+                          onSelect={() => {
+                            setSelectedDegreeOption(deg)
+                            setDegreeName(deg)
+                            
+                            // AUTO-POPULATE: load existing preloaded semesters for this degree!
+                            const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
+                            if (uni && selectedFacultyOption) {
+                              const existingSems = uni.faculties[selectedFacultyOption]?.[deg] || {}
+                              
+                              const getSemNumber = (name: string): number => {
+                                const num = name.match(/\d+/)
+                                return num ? parseInt(num[0], 10) : 999
+                              }
+
+                              const sortedEntries = Object.entries(existingSems).sort((a, b) => {
+                                return getSemNumber(a[0]) - getSemNumber(b[0])
+                              })
+
+                              const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => ({
+                                id: `sem_${idx + 1}`,
+                                name: semName,
+                                subjects: (semData.core || []).map((sub) => ({
+                                  code: sub.code,
+                                  name: sub.name,
+                                  credits: String(sub.credits),
+                                })),
+                              }))
+                              if (mappedSems.length > 0) {
+                                setSemesters(mappedSems)
+                                toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
+                              }
+                            }
+                          }}
+                          className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
+                        >
+                          {deg}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setSelectedDegreeOption('custom')
+                          setDegreeName('')
+                          setSemesters([{ id: 'sem_1', name: 'Semester 1', subjects: [{ code: '', name: '', credits: '3' }] }])
+                        }}
+                        className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Custom / New Degree Program
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -721,8 +861,15 @@ export default function CustomDegreePage() {
                     placeholder="e.g. BSc in Computer Science"
                     value={degreeName}
                     onChange={(e) => setDegreeName(e.target.value)}
-                    className="bg-muted/50 border-border h-11"
-                    disabled={isSaving}
+                    className={`bg-muted/50 border-border h-11 transition-all ${
+                      preloadedDegrees.length > 0 && selectedDegreeOption !== 'custom' && selectedDegreeOption !== ''
+                        ? 'opacity-70 bg-muted cursor-not-allowed font-medium'
+                        : ''
+                    }`}
+                    disabled={
+                      isSaving || 
+                      (preloadedDegrees.length > 0 && selectedDegreeOption !== 'custom' && selectedDegreeOption !== '')
+                    }
                     maxLength={100}
                   />
                 </div>
