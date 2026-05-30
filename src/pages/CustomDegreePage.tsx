@@ -18,7 +18,6 @@ import type { SemesterMap, Subject } from '../data/types'
 import { Spinner } from '../components/ui/spinner'
 import { db } from '../firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
-import { subjectData } from '../data/subjects/index'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -149,12 +148,7 @@ export default function CustomDegreePage() {
   useEffect(() => {
     async function loadAllUniversities() {
       try {
-        const uniMap: Record<string, { name: string; faculties: Record<string, Record<string, SemesterMap>> }> = {
-          SUSL: {
-            name: 'Sabaragamuwa University of Sri Lanka',
-            faculties: subjectData as unknown as Record<string, Record<string, SemesterMap>>,
-          },
-        }
+        const uniMap: Record<string, { name: string; faculties: Record<string, Record<string, SemesterMap>> }> = {}
 
         const querySnapshot = await getDocs(collection(db, 'globalCurricula'))
         querySnapshot.docs.forEach((doc) => {
@@ -175,11 +169,7 @@ export default function CustomDegreePage() {
         setPreloadedUniversities(list)
       } catch (err) {
         console.error('Failed to load universities list:', err)
-        setPreloadedUniversities([{
-          shortName: 'SUSL',
-          name: 'Sabaragamuwa University of Sri Lanka',
-          faculties: subjectData as unknown as Record<string, Record<string, SemesterMap>>,
-        }])
+        setPreloadedUniversities([])
       }
     }
     loadAllUniversities()

@@ -1,11 +1,7 @@
 import { Button } from '../components/ui/button'
 import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import {
-  subjectData,
-  type Subject,
-  type SemesterSubjects,
-} from '../data/subjects/index'
+import type { Subject, SemesterSubjects } from '../data/types'
 import { gradeOptions, gradePoints } from '../data/grading'
 import { useNavigate } from 'react-router-dom'
 import CountUp from 'react-countup'
@@ -112,14 +108,8 @@ function Grades() {
     fetchGlobalCurricula()
   }, [])
 
-  // Resolve curricula mapping (merges offline static fallback and private custom degree structures)
+  // Resolve curricula mapping (merges Firestore globalCurricula list and private custom degree structures)
   const resolvedCurricula = useMemo(() => {
-    const fallbackUni = {
-      name: 'Sabaragamuwa University of Sri Lanka',
-      shortName: 'SUSL',
-      faculties: subjectData as unknown as Record<string, Record<string, unknown>>,
-    }
-
     const uniMap: Record<
       string,
       {
@@ -127,9 +117,7 @@ function Grades() {
         shortName: string
         faculties: Record<string, Record<string, unknown>>
       }
-    > = {
-      SUSL: fallbackUni,
-    }
+    > = {}
 
     globalCurriculaList.forEach((item) => {
       const doc = item as {
