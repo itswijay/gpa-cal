@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getAnalytics } from 'firebase/analytics'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -22,5 +23,8 @@ export const googleProvider = new GoogleAuthProvider()
 
 // Initialize Firestore
 export const db = getFirestore(app)
+
+// Safely initialize Analytics (browser-only)
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null
 
 export default app
