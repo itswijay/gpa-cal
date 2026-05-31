@@ -29,11 +29,13 @@ interface DynamicSubject {
   code: string
   name: string
   credits: string
+  isElective?: boolean
 }
 
 interface DynamicSemester {
   id: string
   name: string
+  electiveCreditsRequired?: string
   subjects: DynamicSubject[]
 }
 
@@ -58,7 +60,8 @@ export default function CustomDegreePage() {
     {
       id: 'sem_1',
       name: 'Semester 1',
-      subjects: [{ code: '', name: '', credits: '3' }],
+      electiveCreditsRequired: '0',
+      subjects: [{ code: '', name: '', credits: '3', isElective: false }],
     },
   ])
   const [isSaving, setIsSaving] = useState(false)
@@ -101,14 +104,26 @@ export default function CustomDegreePage() {
       // Map local dynamic state into SemesterMap schema
       const mappedSemesters: SemesterMap = {}
       semesters.forEach((sem) => {
-        const subjectsList: Subject[] = sem.subjects.map((sub) => ({
-          code: sub.code.trim(),
-          name: sub.name.trim(),
-          credits: Number(sub.credits),
-        }))
+        const coreSubjects: Subject[] = []
+        const electiveSubjects: Subject[] = []
+
+        sem.subjects.forEach((sub) => {
+          const parsedSub: Subject = {
+            code: sub.code.trim(),
+            name: sub.name.trim(),
+            credits: Number(sub.credits),
+          }
+          if (sub.isElective) {
+            electiveSubjects.push(parsedSub)
+          } else {
+            coreSubjects.push(parsedSub)
+          }
+        })
+
         mappedSemesters[sem.name] = {
-          core: subjectsList,
-          electiveCreditsRequired: 0,
+          core: coreSubjects,
+          electives: electiveSubjects.length > 0 ? electiveSubjects : undefined,
+          electiveCreditsRequired: sem.electiveCreditsRequired ? Number(sem.electiveCreditsRequired) : 0,
         }
       })
 
@@ -219,15 +234,26 @@ export default function CustomDegreePage() {
               return getSemNumber(a[0]) - getSemNumber(b[0])
             })
 
-            const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => ({
-              id: `sem_${idx + 1}`,
-              name: semName,
-              subjects: (semData.core || []).map((sub) => ({
+            const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => {
+              const coreMapped = (semData.core || []).map((sub) => ({
                 code: sub.code,
                 name: sub.name,
                 credits: String(sub.credits),
-              })),
-            }))
+                isElective: false,
+              }))
+              const electivesMapped = (semData.electives || []).map((sub) => ({
+                code: sub.code,
+                name: sub.name,
+                credits: String(sub.credits),
+                isElective: true,
+              }))
+              return {
+                id: `sem_${idx + 1}`,
+                name: semName,
+                electiveCreditsRequired: semData.electiveCreditsRequired ? String(semData.electiveCreditsRequired) : '0',
+                subjects: [...coreMapped, ...electivesMapped],
+              }
+            })
 
             if (mappedSems.length > 0) {
               setSemesters(mappedSems)
@@ -320,7 +346,8 @@ export default function CustomDegreePage() {
     const newSem: DynamicSemester = {
       id: `sem_${Date.now()}`,
       name: `Semester ${nextSemNumber}`,
-      subjects: [{ code: '', name: '', credits: '3' }],
+      electiveCreditsRequired: '0',
+      subjects: [{ code: '', name: '', credits: '3', isElective: false }],
     }
     setSemesters([...semesters, newSem])
     toast.success(`Semester ${nextSemNumber} added!`)
@@ -347,7 +374,7 @@ export default function CustomDegreePage() {
         if (sem.id !== semId) return sem
         return {
           ...sem,
-          subjects: [...sem.subjects, { code: '', name: '', credits: '3' }],
+          subjects: [...sem.subjects, { code: '', name: '', credits: '3', isElective: false }],
         }
       })
     )
@@ -395,6 +422,37 @@ export default function CustomDegreePage() {
         return {
           ...sem,
           subjects: updatedSubjects,
+        }
+      })
+    )
+  }
+
+  const handleSubjectElectiveToggle = (semId: string, subjectIndex: number) => {
+    setSemesters(
+      semesters.map((sem) => {
+        if (sem.id !== semId) return sem
+        const updatedSubjects = sem.subjects.map((sub, idx) => {
+          if (idx !== subjectIndex) return sub
+          return {
+            ...sub,
+            isElective: !sub.isElective,
+          }
+        })
+        return {
+          ...sem,
+          subjects: updatedSubjects,
+        }
+      })
+    )
+  }
+
+  const handleSemesterElectiveCreditsChange = (semId: string, value: string) => {
+    setSemesters(
+      semesters.map((sem) => {
+        if (sem.id !== semId) return sem
+        return {
+          ...sem,
+          electiveCreditsRequired: value,
         }
       })
     )
@@ -457,15 +515,26 @@ export default function CustomDegreePage() {
       // Map local dynamic state into SemesterMap schema
       const mappedSemesters: SemesterMap = {}
       semesters.forEach((sem) => {
-        const subjectsList: Subject[] = sem.subjects.map((sub) => ({
-          code: sub.code.trim(),
-          name: sub.name.trim(),
-          credits: Number(sub.credits),
-        }))
+        const coreSubjects: Subject[] = []
+        const electiveSubjects: Subject[] = []
+
+        sem.subjects.forEach((sub) => {
+          const parsedSub: Subject = {
+            code: sub.code.trim(),
+            name: sub.name.trim(),
+            credits: Number(sub.credits),
+          }
+          if (sub.isElective) {
+            electiveSubjects.push(parsedSub)
+          } else {
+            coreSubjects.push(parsedSub)
+          }
+        })
 
         mappedSemesters[sem.name] = {
-          core: subjectsList,
-          electiveCreditsRequired: 0,
+          core: coreSubjects,
+          electives: electiveSubjects.length > 0 ? electiveSubjects : undefined,
+          electiveCreditsRequired: sem.electiveCreditsRequired ? Number(sem.electiveCreditsRequired) : 0,
         }
       })
 
@@ -784,15 +853,26 @@ export default function CustomDegreePage() {
                                 return getSemNumber(a[0]) - getSemNumber(b[0])
                               })
 
-                              const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => ({
-                                id: `sem_${idx + 1}`,
-                                name: semName,
-                                subjects: (semData.core || []).map((sub) => ({
+                              const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => {
+                                const coreMapped = (semData.core || []).map((sub) => ({
                                   code: sub.code,
                                   name: sub.name,
                                   credits: String(sub.credits),
-                                })),
-                              }))
+                                  isElective: false,
+                                }))
+                                const electivesMapped = (semData.electives || []).map((sub) => ({
+                                  code: sub.code,
+                                  name: sub.name,
+                                  credits: String(sub.credits),
+                                  isElective: true,
+                                }))
+                                return {
+                                  id: `sem_${idx + 1}`,
+                                  name: semName,
+                                  electiveCreditsRequired: semData.electiveCreditsRequired ? String(semData.electiveCreditsRequired) : '0',
+                                  subjects: [...coreMapped, ...electivesMapped],
+                                }
+                              })
                               if (mappedSems.length > 0) {
                                 setSemesters(mappedSems)
                                 toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
@@ -924,17 +1004,48 @@ export default function CustomDegreePage() {
                     className="bg-card border border-border rounded-xl shadow-sm overflow-hidden"
                   >
                     {/* Semester Section Header */}
-                    <div className="bg-muted/40 border-b border-border px-6 py-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-lg text-foreground">{sem.name}</h3>
+                    <div className="bg-muted/40 border-b border-border px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-primary" />
+                          <h3 className="font-bold text-lg text-foreground">{sem.name}</h3>
+                        </div>
+
+                        {/* Elective Credits Selector */}
+                        <div className="flex items-center gap-2 text-xs bg-muted/80 border border-border px-2.5 py-1 rounded-lg text-muted-foreground">
+                          <span className="font-semibold text-foreground">Required Elective Credits:</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1.5 font-bold text-primary hover:bg-primary/10 gap-1 flex items-center"
+                                disabled={isSaving}
+                              >
+                                <span>{sem.electiveCreditsRequired || '0'}</span>
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-card border-border min-w-[75px]">
+                              {['0', '1', '2', '3', '4', '5', '6', '8'].map((val) => (
+                                <DropdownMenuItem
+                                  key={val}
+                                  onSelect={() => handleSemesterElectiveCreditsChange(sem.id, val)}
+                                  className="hover:bg-accent focus:bg-accent text-center justify-center font-bold cursor-pointer py-1"
+                                >
+                                  {val}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRemoveSemester(sem.id)}
                         disabled={isSaving}
-                        className="text-red-500 hover:bg-red-500/10 hover:text-red-600 font-medium"
+                        className="text-red-500 hover:bg-red-500/10 hover:text-red-600 font-medium self-end sm:self-auto"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Remove Semester
@@ -962,21 +1073,39 @@ export default function CustomDegreePage() {
                               </Button>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3 pr-8">
-                              <div className="col-span-2 space-y-1">
+                            <div className="grid grid-cols-3 gap-2.5 pr-8">
+                              <div className="space-y-1">
                                 <Label className="text-[10px] text-muted-foreground uppercase font-bold">
-                                  Subject Code
+                                  Code
                                 </Label>
                                 <Input
-                                  placeholder="e.g. CYB101"
+                                  placeholder="CYB101"
                                   value={sub.code}
                                   onChange={(e) =>
                                     handleSubjectChange(sem.id, subIdx, 'code', e.target.value)
                                   }
-                                  className="bg-muted/40 border-border font-mono uppercase h-9 text-xs"
+                                  className="bg-muted/40 border-border font-mono uppercase h-9 text-xs px-2"
                                   disabled={isSaving}
                                   maxLength={15}
                                 />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] text-muted-foreground uppercase font-bold">
+                                  Type
+                                </Label>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSubjectElectiveToggle(sem.id, subIdx)}
+                                  disabled={isSaving}
+                                  className={`w-full h-9 justify-center rounded-lg font-bold text-[10px] transition-all px-1 ${
+                                    sub.isElective
+                                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20'
+                                      : 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
+                                  }`}
+                                >
+                                  {sub.isElective ? 'Elective' : 'Core'}
+                                </Button>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-[10px] text-muted-foreground uppercase font-bold">
@@ -1034,9 +1163,10 @@ export default function CustomDegreePage() {
                         <table className="min-w-full text-left text-sm border-collapse">
                           <thead>
                             <tr className="border-b border-border text-muted-foreground font-semibold">
-                              <th className="pb-3 w-1/4 pr-4">Subject Code</th>
-                              <th className="pb-3 w-1/2 pr-4">Subject Name</th>
-                              <th className="pb-3 w-1/6 pr-4 text-center">Credits</th>
+                              <th className="pb-3 w-[160px] pr-4">Subject Code</th>
+                              <th className="pb-3 pr-4">Subject Name</th>
+                              <th className="pb-3 w-[120px] pr-4 text-center">Type</th>
+                              <th className="pb-3 w-[100px] pr-4 text-center">Credits</th>
                               <th className="pb-3 w-[80px] text-center">Delete</th>
                             </tr>
                           </thead>
@@ -1066,6 +1196,21 @@ export default function CustomDegreePage() {
                                     disabled={isSaving}
                                     maxLength={80}
                                   />
+                                </td>
+                                <td className="py-3 pr-4 text-center">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleSubjectElectiveToggle(sem.id, subIdx)}
+                                    disabled={isSaving}
+                                    className={`w-full h-10 justify-center rounded-lg font-bold text-xs transition-all ${
+                                      sub.isElective
+                                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20'
+                                        : 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
+                                    }`}
+                                  >
+                                    {sub.isElective ? 'Elective' : 'Core'}
+                                  </Button>
                                 </td>
                                 <td className="py-3 pr-4">
                                   <DropdownMenu>
