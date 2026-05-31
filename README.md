@@ -57,7 +57,7 @@ A comprehensive, clean and user-friendly GPA calculation and tracking applicatio
 
 ### Version 4.0 - Custom Degree Builder, Collaborative Catalog, and Moderation Engine
 
-- **Visual Custom Degree Creator**: Fully interactive, visual degree and curriculum builder with drag-and-drop-like ease.
+- **Visual Custom Degree Creator**: Fully interactive, visual degree and curriculum builder with drag-and-drop-like ease. Now includes full support for core vs. elective subject configurations, color-coded badge toggles, and customizable required elective credits per semester.
 - **Preloaded Catalog Auto-Population**: Instantly load and import any preloaded university degree program to append missing semesters, custom subjects, or edit details.
 - **Global Public Suggestion Engine**: Integrated collaborative workflow allowing users to toggle "Suggest for Public Database" and submit their curriculum suggestions.
 - **Admin Moderation Console**: Comprehensive visual moderation center for administrators to review, inspect, approve, reject with feedback, or safely delete public curriculum suggestions.
