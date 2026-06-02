@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { GoalTracker } from './GoalTracker'
 
@@ -88,18 +88,31 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
         : 'stable'
       : 'stable'
 
-  const trendColor =
-    trend === 'up'
-      ? 'text-green-500'
-      : trend === 'down'
-      ? 'text-red-500'
-      : 'text-blue-500'
-  const trendLabel =
-    trend === 'up'
-      ? '📈 Improving'
-      : trend === 'down'
-      ? '📉 Declining'
-      : '➡️ Stable'
+  // Determine trend icon and label
+  const getTrendIndicator = () => {
+    switch (trend) {
+      case 'up':
+        return {
+          icon: TrendingUp,
+          text: 'Improving',
+          colorClass: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-500/5 dark:border-emerald-500/10',
+        }
+      case 'down':
+        return {
+          icon: TrendingDown,
+          text: 'Declining',
+          colorClass: 'text-red-500 bg-red-500/10 border-red-500/20 dark:bg-red-500/5 dark:border-red-500/10',
+        }
+      default:
+        return {
+          icon: Minus,
+          text: 'Stable',
+          colorClass: 'text-blue-500 bg-blue-500/10 border-blue-500/20 dark:bg-blue-500/5 dark:border-blue-500/10',
+        }
+    }
+  }
+
+  const trendIndicator = getTrendIndicator()
 
   return (
     <motion.div
@@ -146,10 +159,11 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
       </div>
 
       {/* Trend Indicator */}
-      <div
-        className={`mb-6 flex justify-center items-center gap-2 text-sm sm:text-base font-medium ${trendColor}`}
-      >
-        <span>{trendLabel}</span>
+      <div className="mb-6 flex justify-center">
+        <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs sm:text-sm font-semibold shadow-sm transition-all duration-200 ${trendIndicator.colorClass}`}>
+          <trendIndicator.icon className="w-4 h-4 shrink-0" />
+          <span>{trendIndicator.text}</span>
+        </div>
       </div>
 
       {/* Chart */}
