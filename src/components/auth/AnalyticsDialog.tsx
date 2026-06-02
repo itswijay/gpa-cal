@@ -26,15 +26,14 @@ const features = [
     description: 'Access your data from any device, anytime',
   },
   {
-    icon: TrendingUp,
-    title: 'GPA Predictions',
-    description: 'Get insights on your future academic performance',
-    comingSoon: true,
-  },
-  {
     icon: Target,
     title: 'Goal Setting',
     description: 'Set and track your academic goals',
+  },
+  {
+    icon: TrendingUp,
+    title: 'GPA Predictions',
+    description: 'Get insights on your future academic performance',
     comingSoon: true,
   },
 ]

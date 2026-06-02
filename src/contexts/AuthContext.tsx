@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
-import { getUserProfile, createUserProfile, type UserProfile } from '../firebase/firestore'
+import { getUserProfile, createUserProfile, updateUserTargetGPA, type UserProfile } from '../firebase/firestore'
 
 export interface AuthContextType {
   user: User | null
@@ -21,6 +21,7 @@ export interface AuthContextType {
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
   sendPasswordReset: (email: string) => Promise<void>
+  updateTargetGPA: (targetGPA: number | null) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -112,6 +113,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updateTargetGPA = async (targetGPA: number | null): Promise<void> => {
+    if (user) {
+      try {
+        await updateUserTargetGPA(user.uid, targetGPA)
+        setUserProfile((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            targetGPA: targetGPA ?? undefined,
+          }
+        })
+      } catch (error) {
+        console.error('Error updating target GPA:', error)
+        throw error
+      }
+    }
+  }
+
   const value: AuthContextType = {
     user,
     userProfile,
@@ -123,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     refreshUser,
     sendPasswordReset,
+    updateTargetGPA,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

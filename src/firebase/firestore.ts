@@ -46,6 +46,7 @@ export interface UserProfile {
   displayName: string
   photoURL: string
   role?: string
+  targetGPA?: number
   createdAt?: Date
   preferences?: {
     faculty?: string
@@ -90,6 +91,21 @@ export async function updateUserPreferences(
     userRef,
     {
       preferences,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
+}
+
+export async function updateUserTargetGPA(
+  userId: string,
+  targetGPA: number | null
+): Promise<void> {
+  const userRef = doc(db, 'users', userId)
+  await setDoc(
+    userRef,
+    {
+      targetGPA,
       updatedAt: serverTimestamp(),
     },
     { merge: true }

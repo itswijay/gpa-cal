@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   LineChart,
   Line,
@@ -7,9 +8,12 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
+import { GoalTracker } from './GoalTracker'
 
 interface GPAData {
   semester: string
@@ -50,6 +54,17 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 }
 
 export function GPAChart({ data, onClose }: GPAChartProps) {
+  const { userProfile, updateTargetGPA } = useAuth()
+  const targetGPA = userProfile?.targetGPA ?? null
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMounted(true)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [])
+
   // Transform data for chart display
   const chartData = data.map((item) => ({
     semester: item.semester,
@@ -139,71 +154,89 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
 
       {/* Chart */}
       <div className="w-full h-64 sm:h-96">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={chartData}
-            margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="hsl(var(--muted-foreground) / 0.2)"
-              vertical={true}
-              horizontal={true}
-            />
-            <XAxis
-              dataKey="semester"
-              stroke="hsl(var(--muted-foreground) / 0.5)"
-              style={{ fontSize: '13px', fontWeight: '500' }}
-              type="category"
-              padding={{ left: 30, right: 30 }}
-              tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground) / 0.5)"
-              style={{ fontSize: '13px', fontWeight: '500' }}
-              domain={[0, 4]}
-              padding={{ top: 20, bottom: 20 }}
-              tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
-            />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{
-                stroke: 'hsl(var(--muted-foreground) / 0.5)',
-                strokeWidth: 1.5,
-              }}
-            />
-            <Legend
-              wrapperStyle={{
-                paddingTop: '20px',
-                color: '#10b981',
-              }}
-              formatter={() => ' Your GPA Progress'}
-            />
-            <Line
-              type="monotone"
-              dataKey="GPA"
-              stroke="#10b981"
-              strokeWidth={3}
-              dot={{
-                fill: '#10b981',
-                stroke: '#10b981',
-                strokeWidth: 2,
-                r: 6,
-              }}
-              activeDot={{
-                r: 8,
-                fill: '#059669',
-                stroke: '#10b981',
-                strokeWidth: 2.5,
-              }}
-              isAnimationActive={true}
-              animationDuration={800}
-              connectNulls={true}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {isMounted && (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--muted-foreground) / 0.2)"
+                vertical={true}
+                horizontal={true}
+              />
+              <XAxis
+                dataKey="semester"
+                stroke="hsl(var(--muted-foreground) / 0.5)"
+                style={{ fontSize: '13px', fontWeight: '500' }}
+                type="category"
+                padding={{ left: 30, right: 30 }}
+                tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground) / 0.5)"
+                style={{ fontSize: '13px', fontWeight: '500' }}
+                domain={[0, 4]}
+                padding={{ top: 20, bottom: 20 }}
+                tick={{ fill: 'hsl(var(--muted-foreground) / 0.7)' }}
+              />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{
+                  stroke: 'hsl(var(--muted-foreground) / 0.5)',
+                  strokeWidth: 1.5,
+                }}
+              />
+              <Legend
+                wrapperStyle={{
+                  paddingTop: '20px',
+                  color: '#10b981',
+                }}
+                formatter={() => ' Your GPA Progress'}
+              />
+              <Line
+                type="monotone"
+                dataKey="GPA"
+                stroke="#10b981"
+                strokeWidth={3}
+                dot={{
+                  fill: '#10b981',
+                  stroke: '#10b981',
+                  strokeWidth: 2,
+                  r: 6,
+                }}
+                activeDot={{
+                  r: 8,
+                  fill: '#059669',
+                  stroke: '#10b981',
+                  strokeWidth: 2.5,
+                }}
+                isAnimationActive={true}
+                animationDuration={800}
+                connectNulls={true}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {targetGPA !== null && (
+                <ReferenceLine
+                  y={targetGPA}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: `Target: ${targetGPA.toFixed(2)}`,
+                    position: 'insideBottomRight',
+                    offset: 10,
+                    fill: 'hsl(var(--primary))',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                  }}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Insights Text */}
@@ -213,6 +246,13 @@ export function GPAChart({ data, onClose }: GPAChartProps) {
           Track your academic journey over time
         </p>
       </div>
+
+      {/* Goal Setting & Tracker Section */}
+      <GoalTracker
+        completedSemesters={gpas}
+        targetGPA={targetGPA}
+        onSaveTargetGPA={updateTargetGPA}
+      />
     </motion.div>
   )
 }
