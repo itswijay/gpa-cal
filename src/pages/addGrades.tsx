@@ -1,6 +1,6 @@
 import { Button } from '../components/ui/button'
 import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import type { Subject, SemesterSubjects } from '../data/types'
 import { gradeOptions, gradePoints } from '../data/grading'
 import { useNavigate } from 'react-router-dom'
@@ -39,6 +39,7 @@ type GPAEntry = {
 
 function Grades() {
   const [gpa, setGPA] = useState<number>(0)
+  const gradesLoadedForRef = useRef<string | null>(null)
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuth()
   const { data: firebaseData } = useFirebaseData()
@@ -266,6 +267,7 @@ function Grades() {
     }
   }
 
+  // Load editing semester on mount (runs only once)
   useEffect(() => {
     const savedSelections = JSON.parse(
       localStorage.getItem('gpaSelections') || '{}'
@@ -315,17 +317,11 @@ function Grades() {
         console.error('Error parsing editing data:', error)
       }
     } else {
-      // Not editing, use locked values or saved selections or auto-map existing user data
+      // Not editing, use locked values or saved selections
       if (lockedUniversity) {
         setUniversitySelected(lockedUniversity)
       } else if (savedSelections.university) {
         setUniversitySelected(savedSelections.university)
-      } else if (isAuthenticated && firebaseData.length > 0) {
-        // Auto-map first semester to SUSL if university is missing
-        setUniversitySelected(firebaseData[0].university || 'SUSL')
-      } else if (savedSemesters.length > 0) {
-        // Guest users: Auto-map first semester to SUSL if university is missing
-        setUniversitySelected(savedSemesters[0].university || 'SUSL')
       }
 
       if (lockedFaculty) setFacultySelected(lockedFaculty)
@@ -337,19 +333,24 @@ function Grades() {
 
       if (savedSelections.semester) setSemSelected(savedSelections.semester)
     }
+  }, []) // Empty dependency array, run once on mount
 
-    // For authenticated users, check Firebase data for first semester to lock selections
+  // Auto-map selection based on existing user data (only for non-editing mode)
+  useEffect(() => {
+    if (isEditing) return
+
     if (isAuthenticated && firebaseData.length > 0) {
       const firstSemester = firebaseData[0]
-      if (!isEditing) {
-        setUniversitySelected(firstSemester.university || 'SUSL')
-        if (firstSemester.faculty) {
-          setFacultySelected(firstSemester.faculty)
-        }
-        if (firstSemester.degree) {
-          setDegreeSelected(firstSemester.degree)
-        }
+      setUniversitySelected(firstSemester.university || 'SUSL')
+      if (firstSemester.faculty) {
+        setFacultySelected(firstSemester.faculty)
       }
+      if (firstSemester.degree) {
+        setDegreeSelected(firstSemester.degree)
+      }
+    } else if (!isAuthenticated && savedSemesters.length > 0) {
+      const firstSemester = savedSemesters[0]
+      setUniversitySelected(firstSemester.university || 'SUSL')
     }
   }, [isAuthenticated, firebaseData, isEditing, savedSemesters])
 
@@ -420,10 +421,12 @@ function Grades() {
         // If not editing, clear grades
         if (!isEditing) {
           setGrades({})
+          gradesLoadedForRef.current = null
         }
-        // If editing and we have editing data with grades, load them
-        else if (isEditing && editingSemesterData?.grades) {
+        // If editing and we have editing data with grades, load them only once
+        else if (isEditing && editingSemesterData?.grades && gradesLoadedForRef.current !== semSelected) {
           setGrades(editingSemesterData.grades)
+          gradesLoadedForRef.current = semSelected
         }
       }
     }
@@ -439,10 +442,11 @@ function Grades() {
 
   // Separate useEffect to handle loading grades when editingSemesterData changes
   useEffect(() => {
-    if (isEditing && editingSemesterData?.grades && subjects.length > 0) {
+    if (isEditing && editingSemesterData?.grades && subjects.length > 0 && gradesLoadedForRef.current !== semSelected) {
       setGrades(editingSemesterData.grades)
+      gradesLoadedForRef.current = semSelected
     }
-  }, [isEditing, editingSemesterData, subjects])
+  }, [isEditing, editingSemesterData, subjects, semSelected])
 
   useEffect(() => {
     const newSelectedElectiveCredits = electives
@@ -501,6 +505,26 @@ function Grades() {
   useEffect(() => {
     if (!isAuthenticated || !user || !dropdownsSelected) return
 
+    // Check if grades have actually changed compared to the last saved data
+    const lastSavedEntry = firebaseData.find((entry) => entry.semester === semSelected)
+    const lastSavedGrades = lastSavedEntry?.grades || editingSemesterData?.grades || {}
+
+    const currentKeys = Object.keys(grades).filter((k) => grades[k])
+    const savedKeys = Object.keys(lastSavedGrades).filter((k) => lastSavedGrades[k])
+
+    let hasChanged = false
+    if (currentKeys.length !== savedKeys.length) {
+      hasChanged = true
+    } else {
+      for (const key of currentKeys) {
+        if (grades[key] !== lastSavedGrades[key]) {
+          hasChanged = true
+          break
+        }
+      }
+    }
+    if (!hasChanged) return
+
     // Avoid auto-saving an empty draft on initial selection
     const gradesCount = Object.keys(grades).length
     if (gradesCount === 0 && !isEditing) return
@@ -508,7 +532,7 @@ function Grades() {
     // Calculate draft status
     const draftStatus = !(allCoreGradesSelected && isElectiveCreditValid)
 
-    // Debounce the save request by 1000ms
+    // Debounce the save request by 1500ms
     const timer = setTimeout(async () => {
       toast.loading('Saving draft...', { id: 'auto-save' })
 
@@ -539,6 +563,10 @@ function Grades() {
         }
 
         await saveSemesterData(user.uid, newEntry)
+        if (isEditing) {
+          localStorage.setItem('editingSemester', JSON.stringify(newEntry))
+          setEditingSemesterData(newEntry)
+        }
         
         if (draftStatus) {
           toast.success('Draft saved automatically!', { id: 'auto-save' })

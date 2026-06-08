@@ -31,6 +31,7 @@ type Grade = {
   grades?: Record<string, string>
   faculty?: string
   degree?: string
+  isDraft?: boolean
 }
 
 const MainPage = () => {
@@ -102,6 +103,7 @@ const MainPage = () => {
     let semCount = 0
 
     semesters.forEach((sem) => {
+      if (sem.isDraft) return
       const GPA = sem.gpa
       if (GPA !== undefined) {
         totalGPA += GPA
@@ -346,7 +348,13 @@ const MainPage = () => {
                           {s.semester}
                         </td>
                         <td className="p-2 sm:p-4 font-mono font-semibold text-sm sm:text-base text-center border">
-                          {s.gpa}
+                          {s.isDraft ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50">
+                              Draft
+                            </span>
+                          ) : (
+                            s.gpa
+                          )}
                         </td>
                         <td className="p-2 sm:p-4 font-mono font-semibold text-sm sm:text-base text-center border">
                           {s.credits}
@@ -408,9 +416,10 @@ const MainPage = () => {
                     if (isGuest) {
                       setShowAnalyticsDialog(true)
                     } else if (isAuthenticated) {
-                      if (semesters.length === 0) {
+                      const completedCount = semesters.filter((s) => !s.isDraft).length
+                      if (completedCount === 0) {
                         toast.error(
-                          "Please calculate and save at least one semester's grades first to generate GPA progress analytics.",
+                          "Please calculate and save at least one completed semester's grades first to generate GPA progress analytics.",
                           { duration: 4000 }
                         )
                         return
@@ -430,18 +439,20 @@ const MainPage = () => {
             <AnimatePresence>
               {showAnalytics && semesters.length > 0 && (
                 <GPAChart
-                  data={semesters.map((s) => ({
-                    semester: s.semester,
-                    gpa: s.gpa,
-                    credits: s.credits,
-                  }))}
+                  data={semesters
+                    .filter((s) => !s.isDraft)
+                    .map((s) => ({
+                      semester: s.semester,
+                      gpa: s.gpa,
+                      credits: s.credits,
+                    }))}
                   onClose={() => setShowAnalytics(false)}
                 />
               )}
             </AnimatePresence>
 
             {/* GPA Box */}
-            {semesters.length > 0 && (
+            {semesters.filter((s) => !s.isDraft).length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
