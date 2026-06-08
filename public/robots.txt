@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Allow: /addGrades
+Allow: /custom-degree
+Allow: /login
+Disallow: /admin/
+Disallow: /admin/*
+
+Sitemap: https://www.gpacal.app/sitemap.xml
