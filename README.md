@@ -55,6 +55,13 @@ A comprehensive, clean and user-friendly GPA calculation and tracking applicatio
 
 ## Recent Updates
 
+### Version 4.1.0 - Auto-save Grades and Draft Semesters (June 2026)
+
+- **Debounced Auto-Saving**: Automatically saves grades in real-time with a 1.5-second debounce. Restricted to logged-in users.
+- **Draft Semesters**: Save partially completed semesters, visually marked with a "Draft" badge.
+- **Selective GPA & Analytics**: Drafts are automatically excluded from cumulative GPA and charts until all subjects are completed.
+- **Sync Protection**: Prevents network race conditions and stops background sync from overwriting active user inputs.
+
 ### Version 4.0 - Custom Degree Builder, Collaborative Catalog, and Moderation Engine
 
 - **Visual Custom Degree Creator**: Fully interactive, visual degree and curriculum builder with drag-and-drop-like ease. Now includes full support for core vs. elective subject configurations, color-coded badge toggles, and customizable required elective credits per semester.
@@ -346,8 +353,8 @@ This project is maintained by the GPA Calculator community. For license informat
 
 ## Project Status
 
-**Current Version**: 4.0  
+**Current Version**: 4.1.0  
 **Development Status**: Active  
-**Last Updated**: May 2026
+**Last Updated**: June 2026
 
 This application is actively maintained with regular feature updates and bug fixes. The development roadmap includes additional faculty integrations, enhanced analytics capabilities, and expanded institutional support.
