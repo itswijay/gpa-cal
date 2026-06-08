@@ -37,6 +37,7 @@ export interface GPAEntry {
   university?: string
   faculty?: string
   degree?: string
+  isDraft?: boolean
   createdAt?: Date
   updatedAt?: Date
 }
@@ -249,6 +250,7 @@ export function validateImportData(data: unknown): ImportValidation {
       grades: entry.grades || {},
       faculty: entry.faculty || undefined,
       degree: entry.degree || undefined,
+      isDraft: entry.isDraft || false,
     })
   })
 

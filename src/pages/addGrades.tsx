@@ -32,6 +32,9 @@ type GPAEntry = {
   university?: string
   faculty?: string
   degree?: string
+  isDraft?: boolean
+  createdAt?: any
+  updatedAt?: any
 }
 
 function Grades() {
@@ -219,6 +222,7 @@ function Grades() {
       university: universitySelected,
       faculty: facultySelected,
       degree: degreeSelected,
+      isDraft: false,
     }
 
     setIsSaving(true)
@@ -492,6 +496,80 @@ function Grades() {
 
   const canSave =
     dropdownsSelected && allCoreGradesSelected && isElectiveCreditValid
+
+  // Auto-save drafts for authenticated users when grades change
+  useEffect(() => {
+    if (!isAuthenticated || !user || !dropdownsSelected) return
+
+    // Avoid auto-saving an empty draft on initial selection
+    const gradesCount = Object.keys(grades).length
+    if (gradesCount === 0 && !isEditing) return
+
+    // Calculate draft status
+    const draftStatus = !(allCoreGradesSelected && isElectiveCreditValid)
+
+    // Debounce the save request by 1000ms
+    const timer = setTimeout(async () => {
+      toast.loading('Saving draft...', { id: 'auto-save' })
+
+      try {
+        const totalCredits =
+          subjects.reduce((sum: number, sub: Subject) => sum + sub.credits, 0) +
+          electiveCreditsRequired
+
+        const newEntry: GPAEntry = {
+          semester: semSelected,
+          gpa: gpa,
+          credits: totalCredits,
+          grades: grades,
+          university: universitySelected,
+          faculty: facultySelected,
+          degree: degreeSelected,
+          isDraft: draftStatus,
+        }
+
+        // Maintain existing createdAt if we have it
+        if (isEditing && editingSemesterData?.createdAt) {
+          newEntry.createdAt = editingSemesterData.createdAt
+        } else {
+          const existing = firebaseData.find((entry) => entry.semester === semSelected)
+          if (existing?.createdAt) {
+            newEntry.createdAt = existing.createdAt
+          }
+        }
+
+        await saveSemesterData(user.uid, newEntry)
+        
+        if (draftStatus) {
+          toast.success('Draft saved automatically!', { id: 'auto-save' })
+        } else {
+          toast.success('Semester grades completed & auto-saved!', { id: 'auto-save' })
+        }
+      } catch (error) {
+        console.error('Failed to auto-save grades:', error)
+        toast.error('Failed to auto-save. Please check connection.', { id: 'auto-save' })
+      }
+    }, 1500)
+
+    return () => clearTimeout(timer)
+  }, [
+    grades,
+    isAuthenticated,
+    user,
+    universitySelected,
+    facultySelected,
+    degreeSelected,
+    semSelected,
+    subjects,
+    electiveCreditsRequired,
+    allCoreGradesSelected,
+    isElectiveCreditValid,
+    dropdownsSelected,
+    isEditing,
+    editingSemesterData,
+    firebaseData,
+    gpa,
+  ])
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground p-0 mt-0">
