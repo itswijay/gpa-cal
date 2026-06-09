@@ -49,11 +49,11 @@ const steps = [
     icon: Save,
     title: 'Save & Track',
     description:
-      'After entering your grades, click "Save" to store your semester data. Your GPA will be calculated automatically.',
+      'For signed-in users, grades are saved automatically as drafts in real-time. If not signed in, enter all grades and click "Save Semester" to save locally.',
     tips: [
-      'View all your semesters in the summary table',
-      'Edit or delete semesters anytime',
-      'Your overall GPA is shown at the bottom',
+      'Auto-save: Grades sync automatically as you make changes (for signed-in users)',
+      'Drafts: Incomplete semesters show a "Draft" badge and are excluded from cumulative GPA',
+      'Edit or delete semesters anytime from the summary table',
     ],
   },
   {
