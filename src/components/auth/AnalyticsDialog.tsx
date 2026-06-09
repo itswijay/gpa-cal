@@ -1,4 +1,4 @@
-import { BarChart3, RefreshCw, Target, TrendingUp } from 'lucide-react'
+import { BarChart3, RefreshCw, Target, Save } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,14 @@ interface AnalyticsDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const features = [
+interface FeatureItem {
+  icon: any
+  title: string
+  description: string
+  comingSoon?: boolean
+}
+
+const features: FeatureItem[] = [
   {
     icon: BarChart3,
     title: 'GPA Performance Charts',
@@ -31,10 +38,9 @@ const features = [
     description: 'Set and track your academic goals',
   },
   {
-    icon: TrendingUp,
-    title: 'GPA Predictions',
-    description: 'Get insights on your future academic performance',
-    comingSoon: true,
+    icon: Save,
+    title: 'Auto-Save & Drafts',
+    description: 'Save grades in real-time and preserve incomplete semesters',
   },
 ]
 
