@@ -915,7 +915,7 @@ export default function CustomDegreePage() {
                   </Label>
                   <Input
                     id="facultyName"
-                    placeholder="e.g. Faculty of Computing"
+                    placeholder="e.g. Computing"
                     value={facultyName}
                     onChange={(e) => setFacultyName(e.target.value)}
                     className={`bg-muted/50 border-border h-11 transition-all ${
