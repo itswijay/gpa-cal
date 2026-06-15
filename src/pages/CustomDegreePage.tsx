@@ -14,7 +14,7 @@ import {
   suggestCustomDegreeDeletion,
   type CustomDegreeData
 } from '../firebase/firestore'
-import type { SemesterMap, Subject } from '../data/types'
+import type { SemesterMap, Subject, SemesterSubjects } from '../data/types'
 import { Spinner } from '../components/ui/spinner'
 import { db } from '../firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
@@ -120,11 +120,15 @@ export default function CustomDegreePage() {
           }
         })
 
-        mappedSemesters[sem.name] = {
+        const semesterData: SemesterSubjects = {
           core: coreSubjects,
-          electives: electiveSubjects.length > 0 ? electiveSubjects : undefined,
           electiveCreditsRequired: sem.electiveCreditsRequired ? Number(sem.electiveCreditsRequired) : 0,
         }
+        if (electiveSubjects.length > 0) {
+          semesterData.electives = electiveSubjects
+        }
+
+        mappedSemesters[sem.name] = semesterData
       })
 
       const customDegreeData: CustomDegreeData = {
@@ -531,11 +535,15 @@ export default function CustomDegreePage() {
           }
         })
 
-        mappedSemesters[sem.name] = {
+        const semesterData: SemesterSubjects = {
           core: coreSubjects,
-          electives: electiveSubjects.length > 0 ? electiveSubjects : undefined,
           electiveCreditsRequired: sem.electiveCreditsRequired ? Number(sem.electiveCreditsRequired) : 0,
         }
+        if (electiveSubjects.length > 0) {
+          semesterData.electives = electiveSubjects
+        }
+
+        mappedSemesters[sem.name] = semesterData
       })
 
       const customDegreeData: CustomDegreeData = {
