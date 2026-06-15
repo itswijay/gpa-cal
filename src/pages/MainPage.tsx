@@ -76,7 +76,7 @@ const MainPage = () => {
 
   // Load data based on authentication status
   useEffect(() => {
-    if (isAuthenticated && firebaseData.length > 0) {
+    if (isAuthenticated) {
       // Use Firebase data for authenticated users
       const sortedData = [...firebaseData].sort((a, b) => {
         const semesterA = parseInt(a.semester.split(' ')[1])
@@ -171,6 +171,14 @@ const MainPage = () => {
         if (isAuthenticated && user) {
           // Delete from Firebase
           await deleteSemesterData(user.uid, semesterToDelete)
+          const updatedSemesters = semesters
+            .filter((sem) => sem.semester !== semesterToDelete)
+            .sort((a, b) => {
+              const semesterA = parseInt(a.semester.split(' ')[1])
+              const semesterB = parseInt(b.semester.split(' ')[1])
+              return semesterA - semesterB
+            })
+          setSemesters(updatedSemesters)
           toast.success(`${semesterToDelete} has been deleted`)
         } else {
           // Delete from localStorage
