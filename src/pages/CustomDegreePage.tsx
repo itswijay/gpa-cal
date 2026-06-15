@@ -66,6 +66,7 @@ export default function CustomDegreePage() {
   ])
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingExisting, setIsLoadingExisting] = useState(true)
+  const [hasExistingProgram, setHasExistingProgram] = useState(false)
 
   // Deletion Dialog States
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -76,10 +77,10 @@ export default function CustomDegreePage() {
   const handleDeleteProgram = async () => {
     if (!user) return
     setIsDeleting(true)
-    const loadToast = toast.loading('Deleting your custom degree...')
+    const loadToast = toast.loading('Deleting your custom degree from your account...')
     try {
-      await deleteCustomDegree(user.uid, suggestionId || undefined)
-      toast.success('Custom degree completely deleted!', { id: loadToast })
+      await deleteCustomDegree(user.uid)
+      toast.success('Custom degree successfully removed from your account!', { id: loadToast })
       setIsDeleteConfirmOpen(false)
       navigate('/addGrades')
     } catch (error) {
@@ -209,6 +210,7 @@ export default function CustomDegreePage() {
         try {
           const existing = await getCustomDegree(user.uid)
           if (existing) {
+            setHasExistingProgram(true)
             setDegreeName(existing.degreeName)
             setUniversityName(existing.universityName || '')
             setUniversityShort(existing.universityShort || '')
@@ -1293,27 +1295,44 @@ export default function CustomDegreePage() {
                   Add Semester Block
                 </Button>
 
-                {/* If they have already saved a custom degree, show the delete option */}
-                {suggestionId && (
+                {/* Delete from Account (Always available if they have a saved custom degree template) */}
+                {hasExistingProgram && (
                   <Button
                     variant="destructive"
                     type="button"
-                    onClick={() => {
-                      if (suggestionStatus === 'approved') {
-                        setIsSuggestDeleteOpen(true)
-                      } else {
-                        setIsDeleteConfirmOpen(true)
-                      }
-                    }}
-                    disabled={isSaving || isDeleting || suggestionStatus === 'delete_pending'}
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    disabled={isSaving || isDeleting}
                     className="bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-500 font-semibold flex items-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
-                    {suggestionStatus === 'approved' 
-                      ? 'Suggest Deletion' 
-                      : suggestionStatus === 'delete_pending' 
-                      ? 'Deletion Pending' 
-                      : 'Delete Program'}
+                    Delete Program
+                  </Button>
+                )}
+
+                {/* Suggest Public Deletion (Only if template was approved/is public) */}
+                {suggestionId && suggestionStatus === 'approved' && (
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setIsSuggestDeleteOpen(true)}
+                    disabled={isSaving || isDeleting}
+                    className="bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-500 font-semibold flex items-center gap-2"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    Suggest Public Deletion
+                  </Button>
+                )}
+
+                {/* Public Deletion Pending Badge */}
+                {suggestionId && suggestionStatus === 'delete_pending' && (
+                  <Button
+                    variant="outline"
+                    type="button"
+                    disabled={true}
+                    className="bg-muted border border-border text-muted-foreground font-semibold flex items-center gap-2"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    Public Deletion Pending
                   </Button>
                 )}
               </div>
@@ -1369,7 +1388,7 @@ export default function CustomDegreePage() {
                 <h3 className="text-lg font-bold">Delete Custom Program?</h3>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Are you sure you want to completely delete your custom degree program template? This action is permanent and cannot be undone.
+                Are you sure you want to completely delete your custom degree program template from your account? This action is permanent and will not affect the public database suggestion if you submitted one.
               </p>
               <div className="flex justify-end gap-3 pt-2">
                 <Button
