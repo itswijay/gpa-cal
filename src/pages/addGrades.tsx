@@ -2,7 +2,8 @@ import { Button } from '../components/ui/button'
 import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import type { Subject, SemesterSubjects } from '../data/types'
-import { gradeOptions, gradePoints } from '../data/grading'
+import { gradeOptions } from '../data/grading'
+import { calculateSemesterGPA } from '../utils/tempGpaUtils'
 import { useNavigate } from 'react-router-dom'
 import CountUp from 'react-countup'
 import toast from 'react-hot-toast'
@@ -456,27 +457,7 @@ function Grades() {
   }, [grades, electives])
 
   const calculateGPA = useCallback(() => {
-    let totalCredits = 0
-    let totalPoints = 0
-
-    const allSubjects = [
-      ...subjects,
-      ...electives.filter((elective: Subject) => grades[elective.code]),
-    ]
-
-    allSubjects.forEach((sub) => {
-      const grade = grades[sub.code]
-      const point = gradePoints[grade]
-
-      if (point !== undefined) {
-        totalCredits += sub.credits
-        totalPoints += point * sub.credits
-      }
-    })
-
-    return totalCredits === 0
-      ? 0
-      : Number((totalPoints / totalCredits).toFixed(3))
+    return calculateSemesterGPA(subjects, electives, grades)
   }, [subjects, electives, grades])
 
   useEffect(() => {
