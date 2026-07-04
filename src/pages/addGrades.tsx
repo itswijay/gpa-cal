@@ -3,7 +3,7 @@ import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import type { Subject, SemesterSubjects } from '../data/types'
 import { gradeOptions } from '../data/grading'
-import { calculateSemesterGPA } from '../utils/tempGpaUtils'
+import { calculateSemesterGpa } from '../domain/gpa/calculateSemesterGpa'
 import { useNavigate } from 'react-router-dom'
 import CountUp from 'react-countup'
 import toast from 'react-hot-toast'
@@ -457,7 +457,7 @@ function Grades() {
   }, [grades, electives])
 
   const calculateGPA = useCallback(() => {
-    return calculateSemesterGPA(subjects, electives, grades)
+    return calculateSemesterGpa(subjects, electives, grades)
   }, [subjects, electives, grades])
 
   useEffect(() => {

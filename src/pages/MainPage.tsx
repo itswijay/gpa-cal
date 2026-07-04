@@ -23,7 +23,7 @@ import { HowToUseDialog } from '../components/HowToUseDialog'
 import { Spinner } from '../components/ui/spinner'
 import { GPAChart } from '../components/analytics/GPAChart'
 import { deleteSemesterData } from '../firebase/firestore'
-import { calculateCumulativeGPA } from '../utils/tempGpaUtils'
+import { calculateCumulativeGpa } from '../domain/gpa/calculateCumulativeGpa'
 
 type Grade = {
   gpa: number
@@ -100,7 +100,7 @@ const MainPage = () => {
   }, [isAuthenticated, isGuest, firebaseData])
 
   const calculateGPA = () => {
-    return calculateCumulativeGPA(semesters)
+    return calculateCumulativeGpa(semesters)
   }
 
   const handleClearData = async () => {
