@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore'
+
 export type Subject = {
   code: string
   name: string
@@ -20,4 +22,18 @@ export type DegreeMap = {
 
 export type FacultyMap = {
   [faculty: string]: DegreeMap
+}
+
+export interface GPAEntry {
+  id?: string
+  semester: string
+  gpa: number
+  credits: number
+  grades?: Record<string, string>
+  university?: string
+  faculty?: string
+  degree?: string
+  isDraft?: boolean
+  createdAt?: Timestamp
+  updatedAt?: Timestamp
 }

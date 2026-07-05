@@ -1,8 +1,7 @@
 import { saveSemesterData } from '../adapters/firebase/gpaRepository'
-import type { GPAEntry } from '../adapters/firebase/gpaRepository'
 import { calculateSemesterGpa } from '../domain/gpa/calculateSemesterGpa'
 import { validateElectiveCredits } from '../domain/curriculum/validateElectiveCredits'
-import type { Subject } from '../data/types'
+import type { Subject, GPAEntry } from '../data/types'
 
 export interface SaveSemesterGradesInput {
   userId: string

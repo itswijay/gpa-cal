@@ -14,7 +14,7 @@ import {
   migrateLocalDataToFirestore,
   createUserProfile,
 } from '../../../adapters/firebase/gpaRepository'
-import type { GPAEntry } from '../../../adapters/firebase/gpaRepository'
+import type { GPAEntry } from '../../../data/types'
 
 interface MigrationDialogProps {
   open: boolean

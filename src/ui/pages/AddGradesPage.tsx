@@ -1,7 +1,7 @@
 import { Button } from '../components/ui/button'
 import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import type { Subject, SemesterSubjects } from '../../data/types'
+import type { Subject, SemesterSubjects, GPAEntry } from '../../data/types'
 import { gradeOptions } from '../../data/grading'
 import { calculateSemesterGpa } from '../../domain/gpa/calculateSemesterGpa'
 import { validateElectiveCredits } from '../../domain/curriculum/validateElectiveCredits'
@@ -28,19 +28,6 @@ import { collection, getDocs } from 'firebase/firestore'
 const DEFAULT_FACULTY = 'Select Your Faculty'
 const DEFAULT_DEGREE = 'Select Your Degree Program'
 const DEFAULT_SEMESTER = 'Select Your Semester'
-
-type GPAEntry = {
-  semester: string
-  gpa: number
-  credits: number
-  grades?: Record<string, string>
-  university?: string
-  faculty?: string
-  degree?: string
-  isDraft?: boolean
-  createdAt?: any
-  updatedAt?: any
-}
 
 function Grades() {
   const [gpa, setGPA] = useState<number>(0)

@@ -12,20 +12,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from './config'
-
-export interface GPAEntry {
-  id?: string
-  semester: string
-  gpa: number
-  credits: number
-  grades?: Record<string, string>
-  university?: string
-  faculty?: string
-  degree?: string
-  isDraft?: boolean
-  createdAt?: Date
-  updatedAt?: Date
-}
+import type { GPAEntry } from '../../data/types'
 
 export interface UserProfile {
   email: string
