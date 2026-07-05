@@ -49,6 +49,10 @@ export function prepareSemesterEntry(input: PrepareSemesterEntryInput): GPAEntry
   // 3. Calculate GPA
   const gpa = calculateSemesterGpa(subjects, electives, grades)
 
+  // Credits reflect the semester's required load (core + electiveCreditsRequired),
+  // not the credits actually selected so far — this keeps the value stable in the
+  // UI (e.g. GPA Summary table) even while the semester is still a draft.
+  
   // 4. Calculate total credits for the semester entry
   const totalCredits =
     subjects.reduce((sum, sub) => sum + sub.credits, 0) +
