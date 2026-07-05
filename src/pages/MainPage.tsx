@@ -22,7 +22,7 @@ import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
 import { Spinner } from '../components/ui/spinner'
 import { GPAChart } from '../components/analytics/GPAChart'
-import { deleteSemesterData } from '../firebase/firestore'
+import { deleteSemesterData } from '../adapters/firebase/gpaRepository'
 import { calculateCumulativeGpa } from '../domain/gpa/calculateCumulativeGpa'
 
 type Grade = {

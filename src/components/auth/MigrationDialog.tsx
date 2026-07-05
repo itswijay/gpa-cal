@@ -13,8 +13,8 @@ import { useAuth } from '../../hooks/useAuth'
 import {
   migrateLocalDataToFirestore,
   createUserProfile,
-  type GPAEntry,
-} from '../../firebase/firestore'
+} from '../../adapters/firebase/gpaRepository'
+import type { GPAEntry } from '../../adapters/firebase/gpaRepository'
 
 interface MigrationDialogProps {
   open: boolean

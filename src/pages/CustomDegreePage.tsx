@@ -12,11 +12,11 @@ import {
   getCustomDegree,
   deleteCustomDegree,
   suggestCustomDegreeDeletion,
-  type CustomDegreeData
-} from '../firebase/firestore'
+} from '../adapters/firebase/curriculumRepository'
+import type { CustomDegreeData } from '../adapters/firebase/curriculumRepository'
 import type { SemesterMap, Subject, SemesterSubjects } from '../data/types'
 import { Spinner } from '../components/ui/spinner'
-import { db } from '../firebase/config'
+import { db } from '../adapters/firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
 import {
   DropdownMenu,
