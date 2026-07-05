@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../hooks/useAuth'
 import { useFirebaseData } from '../hooks/useFirebaseData'
 import { saveSemesterData } from '../../adapters/firebase/gpaRepository'
+import { saveSemesterDataLocally } from '../../adapters/storage/localGpaStore'
 import { saveSemesterGrades } from '../../use-cases/saveSemesterGrades'
 import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
 import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
@@ -229,15 +230,7 @@ function Grades() {
         toast.success(successMessage)
       } else {
         // Save to localStorage
-        const existingData = JSON.parse(
-          localStorage.getItem('gpaData') || '[]'
-        ) as GPAEntry[]
-        const updatedData = [
-          ...existingData.filter((entry) => entry.semester !== semSelected),
-          newEntry,
-        ]
-
-        localStorage.setItem('gpaData', JSON.stringify(updatedData))
+        saveSemesterDataLocally(newEntry)
         localStorage.setItem('lockedUniversity', universitySelected)
         localStorage.setItem('lockedFaculty', facultySelected)
         localStorage.setItem('lockedDegree', degreeSelected)
