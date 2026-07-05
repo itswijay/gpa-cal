@@ -1,6 +1,6 @@
 import { saveSemesterData } from '../adapters/firebase/gpaRepository'
 import { prepareSemesterEntry } from './prepareSemesterEntry'
-import type { Subject, GPAEntry } from '../data/types'
+import type { Subject, GPAEntry, Timestamp } from '../data/types'
 
 export interface SaveSemesterGradesInput {
   userId: string
@@ -12,7 +12,7 @@ export interface SaveSemesterGradesInput {
   university: string
   faculty: string
   degree: string
-  createdAt?: any
+  createdAt?: Timestamp
 }
 
 /**

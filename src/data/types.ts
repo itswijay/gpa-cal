@@ -1,4 +1,5 @@
 import type { Timestamp } from 'firebase/firestore'
+export type { Timestamp }
 
 export type Subject = {
   code: string

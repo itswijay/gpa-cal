@@ -1,6 +1,6 @@
 import { saveSemesterDataLocally } from '../adapters/storage/localGpaStore'
 import { prepareSemesterEntry } from './prepareSemesterEntry'
-import type { Subject, GPAEntry } from '../data/types'
+import type { Subject, GPAEntry, Timestamp } from '../data/types'
 
 export interface SaveSemesterGradesLocallyInput {
   semester: string
@@ -11,7 +11,7 @@ export interface SaveSemesterGradesLocallyInput {
   university: string
   faculty: string
   degree: string
-  createdAt?: any
+  createdAt?: Timestamp
 }
 
 /**

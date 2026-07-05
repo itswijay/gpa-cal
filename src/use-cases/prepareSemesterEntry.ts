@@ -1,6 +1,6 @@
 import { calculateSemesterGpa } from '../domain/gpa/calculateSemesterGpa'
 import { validateElectiveCredits } from '../domain/curriculum/validateElectiveCredits'
-import type { Subject, GPAEntry } from '../data/types'
+import type { Subject, GPAEntry, Timestamp } from '../data/types'
 
 export interface PrepareSemesterEntryInput {
   semester: string
@@ -11,7 +11,7 @@ export interface PrepareSemesterEntryInput {
   university: string
   faculty: string
   degree: string
-  createdAt?: any
+  createdAt?: Timestamp
 }
 
 /**
