@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import type { Subject, SemesterSubjects } from '../data/types'
 import { gradeOptions } from '../data/grading'
 import { calculateSemesterGpa } from '../domain/gpa/calculateSemesterGpa'
+import { validateElectiveCredits } from '../domain/curriculum/validateElectiveCredits'
 import { useNavigate } from 'react-router-dom'
 import CountUp from 'react-countup'
 import toast from 'react-hot-toast'
@@ -465,13 +466,16 @@ function Grades() {
     setGPA(newGPA)
   }, [calculateGPA])
 
-  const allCoreGradesSelected = subjects.every(
-    (sub: Subject) => grades[sub.code]
+  const {
+    allCoreGradesSelected,
+    isElectiveCreditValid,
+    hasExcessElectiveCredits,
+  } = validateElectiveCredits(
+    subjects,
+    grades,
+    selectedElectiveCredits,
+    electiveCreditsRequired
   )
-  const isElectiveCreditValid =
-    selectedElectiveCredits === electiveCreditsRequired
-  const hasExcessElectiveCredits =
-    selectedElectiveCredits > electiveCreditsRequired
 
   const dropdownsSelected =
     universitySelected !== DEFAULT_UNIVERSITY &&

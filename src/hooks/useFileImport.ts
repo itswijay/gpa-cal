@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { validateImportData } from '../firebase/firestore'
-import type { ImportValidation } from '../firebase/firestore'
+import { validateImportData } from '../domain/curriculum/validateImportData'
+import type { ImportValidation } from '../domain/curriculum/validateImportData'
 
 interface FileImportResult {
   success: boolean
