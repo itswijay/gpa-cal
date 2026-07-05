@@ -1,6 +1,5 @@
 import { saveSemesterData } from '../adapters/firebase/gpaRepository'
-import { calculateSemesterGpa } from '../domain/gpa/calculateSemesterGpa'
-import { validateElectiveCredits } from '../domain/curriculum/validateElectiveCredits'
+import { prepareSemesterEntry } from './prepareSemesterEntry'
 import type { Subject, GPAEntry } from '../data/types'
 
 export interface SaveSemesterGradesInput {
@@ -23,55 +22,11 @@ export interface SaveSemesterGradesInput {
 export async function saveSemesterGrades(
   input: SaveSemesterGradesInput
 ): Promise<GPAEntry> {
-  const {
-    userId,
-    semester,
-    subjects,
-    electives,
-    grades,
-    electiveCreditsRequired,
-    university,
-    faculty,
-    degree,
-    createdAt,
-  } = input
+  const { userId, ...prepareInput } = input
 
-  // 1. Calculate selected elective credits
-  const selectedElectiveCredits = electives
-    .filter((elective) => grades[elective.code])
-    .reduce((sum, elective) => sum + elective.credits, 0)
+  const newEntry = prepareSemesterEntry(prepareInput)
 
-  // 2. Validate using the domain rules
-  const { allCoreGradesSelected, isElectiveCreditValid } = validateElectiveCredits(
-    subjects,
-    grades,
-    selectedElectiveCredits,
-    electiveCreditsRequired
-  )
-
-  const isDraft = !(allCoreGradesSelected && isElectiveCreditValid)
-
-  // 3. Calculate GPA
-  const gpa = calculateSemesterGpa(subjects, electives, grades)
-
-  // 4. Calculate total credits for the semester entry
-  const totalCredits =
-    subjects.reduce((sum, sub) => sum + sub.credits, 0) +
-    electiveCreditsRequired
-
-  const newEntry: GPAEntry = {
-    semester,
-    gpa,
-    credits: totalCredits,
-    grades,
-    university,
-    faculty,
-    degree,
-    isDraft,
-    createdAt,
-  }
-
-  // 5. Save using the adapter
+  // Save using the adapter
   await saveSemesterData(userId, newEntry)
 
   return newEntry

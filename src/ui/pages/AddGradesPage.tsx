@@ -16,9 +16,8 @@ import {
 } from '@/ui/components/ui/dropdown-menu'
 import { useAuth } from '../hooks/useAuth'
 import { useFirebaseData } from '../hooks/useFirebaseData'
-import { saveSemesterData } from '../../adapters/firebase/gpaRepository'
-import { saveSemesterDataLocally } from '../../adapters/storage/localGpaStore'
 import { saveSemesterGrades } from '../../use-cases/saveSemesterGrades'
+import { saveSemesterGradesLocally } from '../../use-cases/saveSemesterGradesLocally'
 import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
 import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
 import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
@@ -203,34 +202,56 @@ function Grades() {
       return
     }
 
-    const totalCredits = [
-      ...subjects,
-      ...electives.filter((elective: Subject) => grades[elective.code]),
-    ].reduce((sum: number, sub: Subject) => sum + sub.credits, 0)
-
-    const newEntry = {
-      semester: semSelected,
-      gpa,
-      credits: totalCredits,
-      grades: grades, // Store the grades for future editing
-      university: universitySelected,
-      faculty: facultySelected,
-      degree: degreeSelected,
-      isDraft: false,
-    }
-
     setIsSaving(true)
     try {
+      // Resolve createdAt to maintain timestamp
+      let createdAt: any = undefined
+      if (isEditing && editingSemesterData?.createdAt) {
+        createdAt = editingSemesterData.createdAt
+      } else {
+        const localData = JSON.parse(localStorage.getItem('gpaData') || '[]') as GPAEntry[]
+        const existingLocal = localData.find((entry) => entry.semester === semSelected)
+        if (existingLocal?.createdAt) {
+          createdAt = existingLocal.createdAt
+        } else {
+          const existingFirebase = firebaseData.find((entry) => entry.semester === semSelected)
+          if (existingFirebase?.createdAt) {
+            createdAt = existingFirebase.createdAt
+          }
+        }
+      }
+
       if (isAuthenticated && user) {
         // Save to Firebase
-        await saveSemesterData(user.uid, newEntry)
+        await saveSemesterGrades({
+          userId: user.uid,
+          semester: semSelected,
+          subjects,
+          electives,
+          grades,
+          electiveCreditsRequired,
+          university: universitySelected,
+          faculty: facultySelected,
+          degree: degreeSelected,
+          createdAt,
+        })
         const successMessage = isEditing
           ? `${semSelected} grades updated successfully!`
           : 'Your grades successfully saved!'
         toast.success(successMessage)
       } else {
         // Save to localStorage
-        saveSemesterDataLocally(newEntry)
+        await saveSemesterGradesLocally({
+          semester: semSelected,
+          subjects,
+          electives,
+          grades,
+          electiveCreditsRequired,
+          university: universitySelected,
+          faculty: facultySelected,
+          degree: degreeSelected,
+          createdAt,
+        })
         localStorage.setItem('lockedUniversity', universitySelected)
         localStorage.setItem('lockedFaculty', facultySelected)
         localStorage.setItem('lockedDegree', degreeSelected)
