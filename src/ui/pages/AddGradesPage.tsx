@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../hooks/useAuth'
 import { useFirebaseData } from '../hooks/useFirebaseData'
 import { saveSemesterData } from '../../adapters/firebase/gpaRepository'
+import { saveSemesterGrades } from '../../use-cases/saveSemesterGrades'
 import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
 import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
 import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
@@ -516,46 +517,41 @@ function Grades() {
     const gradesCount = Object.keys(grades).length
     if (gradesCount === 0 && !isEditing) return
 
-    // Calculate draft status
-    const draftStatus = !(allCoreGradesSelected && isElectiveCreditValid)
-
     // Debounce the save request by 1500ms
     const timer = setTimeout(async () => {
       toast.loading('Saving draft...', { id: 'auto-save' })
 
       try {
-        const totalCredits =
-          subjects.reduce((sum: number, sub: Subject) => sum + sub.credits, 0) +
-          electiveCreditsRequired
-
-        const newEntry: GPAEntry = {
-          semester: semSelected,
-          gpa: gpa,
-          credits: totalCredits,
-          grades: grades,
-          university: universitySelected,
-          faculty: facultySelected,
-          degree: degreeSelected,
-          isDraft: draftStatus,
-        }
-
-        // Maintain existing createdAt if we have it
+        // Resolve createdAt to maintain timestamp
+        let createdAt: any = undefined
         if (isEditing && editingSemesterData?.createdAt) {
-          newEntry.createdAt = editingSemesterData.createdAt
+          createdAt = editingSemesterData.createdAt
         } else {
           const existing = firebaseData.find((entry) => entry.semester === semSelected)
           if (existing?.createdAt) {
-            newEntry.createdAt = existing.createdAt
+            createdAt = existing.createdAt
           }
         }
 
-        await saveSemesterData(user.uid, newEntry)
+        const newEntry = await saveSemesterGrades({
+          userId: user.uid,
+          semester: semSelected,
+          subjects,
+          electives,
+          grades,
+          electiveCreditsRequired,
+          university: universitySelected,
+          faculty: facultySelected,
+          degree: degreeSelected,
+          createdAt,
+        })
+
         if (isEditing) {
           localStorage.setItem('editingSemester', JSON.stringify(newEntry))
           setEditingSemesterData(newEntry)
         }
         
-        if (draftStatus) {
+        if (newEntry.isDraft) {
           toast.success('Draft saved automatically!', { id: 'auto-save' })
         } else {
           toast.success('Semester grades completed & auto-saved!', { id: 'auto-save' })
