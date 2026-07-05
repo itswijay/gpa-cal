@@ -16,14 +16,12 @@ import {
 } from '@/ui/components/ui/dropdown-menu'
 import { useAuth } from '../hooks/useAuth'
 import { useFirebaseData } from '../hooks/useFirebaseData'
+import { useResolvedCurricula } from '../hooks/useResolvedCurricula'
 import { saveSemesterGrades } from '../../use-cases/saveSemesterGrades'
 import { saveSemesterGradesLocally } from '../../use-cases/saveSemesterGradesLocally'
-import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
-import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
 import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
 import { CustomDegreeConflictDialog } from '../components/auth/CustomDegreeConflictDialog'
-import { db } from '../../adapters/firebase/config'
-import { collection, getDocs } from 'firebase/firestore'
+import { resolveCreatedAt } from './addGrades/resolveCreatedAt'
 
 const DEFAULT_FACULTY = 'Select Your Faculty'
 const DEFAULT_DEGREE = 'Select Your Degree Program'
@@ -67,92 +65,9 @@ function Grades() {
   const [editingSemesterData, setEditingSemesterData] =
     useState<GPAEntry | null>(null)
 
-  const [customDegree, setCustomDegree] = useState<CustomDegreeData | null>(null)
-
-  // Fetch user's custom degree if authenticated
-  useEffect(() => {
-    async function loadCustomDegree() {
-      if (isAuthenticated && user) {
-        try {
-          const data = await getCustomDegree(user.uid)
-          setCustomDegree(data)
-        } catch (e) {
-          console.error('Failed to load custom degree:', e)
-        }
-      } else {
-        setCustomDegree(null)
-      }
-    }
-    loadCustomDegree()
-  }, [isAuthenticated, user])
-
+  const { resolvedCurricula, customDegree } = useResolvedCurricula(isAuthenticated, user)
   const DEFAULT_UNIVERSITY = 'Select Your University'
-  const [globalCurriculaList, setGlobalCurriculaList] = useState<unknown[]>([])
   const [universitySelected, setUniversitySelected] = useState(DEFAULT_UNIVERSITY)
-
-  // Fetch all available globalCurricula from Firestore
-  useEffect(() => {
-    async function fetchGlobalCurricula() {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'globalCurricula'))
-        const list = querySnapshot.docs.map(doc => doc.data())
-        setGlobalCurriculaList(list)
-      } catch (err) {
-        console.error('Failed to fetch public curricula from Firestore:', err)
-      }
-    }
-    fetchGlobalCurricula()
-  }, [])
-
-  // Resolve curricula mapping (merges Firestore globalCurricula list and private custom degree structures)
-  const resolvedCurricula = useMemo(() => {
-    const uniMap: Record<
-      string,
-      {
-        name: string
-        shortName: string
-        faculties: Record<string, Record<string, unknown>>
-      }
-    > = {}
-
-    globalCurriculaList.forEach((item) => {
-      const doc = item as {
-        name?: string
-        shortName?: string
-        faculties?: Record<string, Record<string, unknown>>
-      }
-      if (doc.shortName) {
-        const key = doc.shortName.toUpperCase()
-        uniMap[key] = {
-          name: doc.name || '',
-          shortName: key,
-          faculties: (doc.faculties || {}) as Record<string, Record<string, unknown>>,
-        }
-      }
-    })
-
-    if (customDegree) {
-      const uShort = (customDegree.universityShort || 'Custom Degree').toUpperCase()
-      const uName = customDegree.universityName || 'Custom Degree'
-      const fName = customDegree.facultyName || 'Custom Faculty'
-
-      if (!uniMap[uShort]) {
-        uniMap[uShort] = {
-          name: uName,
-          shortName: uShort,
-          faculties: {} as Record<string, Record<string, unknown>>,
-        }
-      }
-
-      if (!uniMap[uShort].faculties[fName]) {
-        uniMap[uShort].faculties[fName] = {} as Record<string, unknown>
-      }
-
-      uniMap[uShort].faculties[fName][customDegree.degreeName] = customDegree.semesters
-    }
-
-    return uniMap
-  }, [globalCurriculaList, customDegree])
 
   const universityOptions = useMemo(() => Object.values(resolvedCurricula), [resolvedCurricula])
 
@@ -205,21 +120,12 @@ function Grades() {
     setIsSaving(true)
     try {
       // Resolve createdAt to maintain timestamp
-      let createdAt: any = undefined
-      if (isEditing && editingSemesterData?.createdAt) {
-        createdAt = editingSemesterData.createdAt
-      } else {
-        const localData = JSON.parse(localStorage.getItem('gpaData') || '[]') as GPAEntry[]
-        const existingLocal = localData.find((entry) => entry.semester === semSelected)
-        if (existingLocal?.createdAt) {
-          createdAt = existingLocal.createdAt
-        } else {
-          const existingFirebase = firebaseData.find((entry) => entry.semester === semSelected)
-          if (existingFirebase?.createdAt) {
-            createdAt = existingFirebase.createdAt
-          }
-        }
-      }
+      const createdAt = resolveCreatedAt(
+        isEditing,
+        editingSemesterData,
+        semSelected,
+        firebaseData
+      )
 
       if (isAuthenticated && user) {
         // Save to Firebase
@@ -524,15 +430,12 @@ function Grades() {
 
       try {
         // Resolve createdAt to maintain timestamp
-        let createdAt: any = undefined
-        if (isEditing && editingSemesterData?.createdAt) {
-          createdAt = editingSemesterData.createdAt
-        } else {
-          const existing = firebaseData.find((entry) => entry.semester === semSelected)
-          if (existing?.createdAt) {
-            createdAt = existing.createdAt
-          }
-        }
+        const createdAt = resolveCreatedAt(
+          isEditing,
+          editingSemesterData,
+          semSelected,
+          firebaseData
+        )
 
         const newEntry = await saveSemesterGrades({
           userId: user.uid,
