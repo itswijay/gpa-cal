@@ -203,28 +203,22 @@ Refer to `.env.example` for the complete template.
 
 ```
 src/
-├── components/              # Reusable UI components
-│   ├── ui/                 # shadcn/ui component library
-│   ├── auth/               # Authentication-related components
-│   ├── analytics/          # Analytics and charting components
-│   ├── theme-provider.tsx  # Theme context and provider
-│   ├── HowToUseDialog.tsx  # User guidance component
-│   └── [other components]
-├── pages/                  # Route-level page components
-│   ├── MainPage.tsx        # GPA summary dashboard
-│   ├── addGrades.tsx       # Grade entry and editing interface
-│   └── LoginPage.tsx       # Authentication page
-├── contexts/               # React context providers
-│   └── AuthContext.tsx     # Authentication state management
-├── hooks/                  # Custom React hooks
-│   ├── useAuth.ts          # Authentication hook
-│   ├── useFirebaseData.ts  # Firebase data synchronization
-│   ├── useFileImport.ts    # File import utilities
-│   └── [other hooks]
-├── firebase/               # Firebase configuration and utilities
-│   ├── config.ts           # Firebase initialization
-│   └── firestore.ts        # Firestore database operations
-├── data/                   # Static data and configuration
+├── domain/                  # Pure business rules (GPA math, validations). NO external dependencies.
+│   ├── gpa/                # GPA math functions & tests
+│   └── curriculum/         # Curriculum rules & validations
+├── use-cases/               # Orchestration functions calling domain & adapters
+│   └── saveSemesterGrades.ts
+├── adapters/                # Infrastructure / external APIs (CRUD only)
+│   └── firebase/           # Firebase config, GPA & Curriculum repositories
+├── ui/                      # Presentation layer (React code)
+│   ├── components/         # Reusable UI components & dialogs
+│   │   ├── ui/             # shadcn/ui base elements
+│   │   ├── auth/           # Auth modals & conflict handlers
+│   │   └── analytics/      # Charts & goal tracking
+│   ├── pages/              # Route pages (MainPage, AddGradesPage, etc.)
+│   ├── contexts/           # Context providers (Theme, Auth)
+│   └── hooks/              # Custom React hooks
+├── data/                    # Static data and configuration
 │   ├── subjects/           # Modular curriculum by faculty
 │   │   ├── computing.ts
 │   │   ├── appliedSciences.ts
@@ -233,7 +227,7 @@ src/
 │   │   └── index.ts
 │   ├── types.ts            # TypeScript type definitions
 │   └── grading.ts          # Grade to point mapping system
-├── lib/                    # Utility functions
+├── lib/                     # Global helpers & utilities
 │   └── utils.ts
 ├── App.tsx                 # Main application component
 ├── main.tsx                # Application entry point

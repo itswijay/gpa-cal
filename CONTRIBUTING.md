@@ -158,6 +158,9 @@ docs: add contributing guidelines for new faculties
 ### Automated Checks
 
 ```bash
+# Run unit tests
+npm run test
+
 # Type checking
 npx tsc --noEmit
 
@@ -218,16 +221,19 @@ Brief description of changes
 ## Quick Reference
 
 ### Core Code Locations
-* **Authentication:** `src/hooks/useAuth.ts` and `src/contexts/AuthContext.tsx`
-* **Firestore Service:** `src/firebase/firestore.ts`
-* **Custom Degree Creator:** `src/pages/CustomDegreePage.tsx`
-* **Main Calculator UI:** `src/pages/addGrades.tsx`
-* **Types:** `src/data/types.ts`
-* **Grading Values:** `src/data/grading.ts`
+* **Authentication Context & Hooks:** `src/ui/contexts/AuthContext.tsx` and `src/ui/hooks/useAuth.ts`
+* **Firebase Repository Adapters:** `src/adapters/firebase/gpaRepository.ts` and `src/adapters/firebase/curriculumRepository.ts`
+* **GPA & Curriculum Domain:** `src/domain/gpa/` and `src/domain/curriculum/`
+* **GPA Save Use Case:** `src/use-cases/saveSemesterGrades.ts`
+* **Custom Degree Creator Page:** `src/ui/pages/CustomDegreePage.tsx`
+* **Main Calculator UI Page:** `src/ui/pages/AddGradesPage.tsx`
+* **Curriculum Schemas & Static Types:** `src/data/types.ts`
+* **Grading Point Systems:** `src/data/grading.ts`
 
 ### Testing Commands
 ```bash
 npm run dev          # Start development server
+npm run test         # Run unit tests using Vitest
 npx tsc --noEmit     # Execute strict TypeScript type checks
 npm run lint         # Run ESLint checks
 npm run build        # Verify production compilation
