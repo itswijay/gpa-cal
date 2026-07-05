@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth'
 import type { AuthError } from 'firebase/auth'
-import { auth, googleProvider } from '../adapters/firebase/config'
+import { auth, googleProvider } from '../../adapters/firebase/config'
 import { signInWithPopup } from 'firebase/auth'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'

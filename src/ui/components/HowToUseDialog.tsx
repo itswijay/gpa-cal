@@ -14,8 +14,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+} from '@/ui/components/ui/dialog'
+import { Button } from '@/ui/components/ui/button'
 
 interface HowToUseDialogProps {
   open: boolean

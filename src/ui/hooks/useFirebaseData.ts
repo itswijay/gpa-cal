@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { subscribeSemesterData } from '../adapters/firebase/gpaRepository'
-import type { GPAEntry } from '../adapters/firebase/gpaRepository'
+import { subscribeSemesterData } from '../../adapters/firebase/gpaRepository'
+import type { GPAEntry } from '../../adapters/firebase/gpaRepository'
 import { useAuth } from './useAuth'
 
 interface UseFirebaseDataReturn {

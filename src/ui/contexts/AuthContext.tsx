@@ -7,9 +7,9 @@ import {
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
 } from 'firebase/auth'
-import { auth, googleProvider } from '../adapters/firebase/config'
-import { getUserProfile, createUserProfile, updateUserTargetGPA } from '../adapters/firebase/gpaRepository'
-import type { UserProfile } from '../adapters/firebase/gpaRepository'
+import { auth, googleProvider } from '../../adapters/firebase/config'
+import { getUserProfile, createUserProfile, updateUserTargetGPA } from '../../adapters/firebase/gpaRepository'
+import type { UserProfile } from '../../adapters/firebase/gpaRepository'
 
 export interface AuthContextType {
   user: User | null

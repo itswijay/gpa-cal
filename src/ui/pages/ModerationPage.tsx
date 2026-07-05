@@ -25,8 +25,8 @@ import {
   rejectCurriculumSuggestion,
   approveCurriculumDeletion,
   rejectCurriculumDeletion,
-} from '../adapters/firebase/curriculumRepository'
-import type { CurriculumSuggestion } from '../adapters/firebase/curriculumRepository'
+} from '../../adapters/firebase/curriculumRepository'
+import type { CurriculumSuggestion } from '../../adapters/firebase/curriculumRepository'
 import { Button } from '../components/ui/button'
 import { Label } from '../components/ui/label'
 import {
