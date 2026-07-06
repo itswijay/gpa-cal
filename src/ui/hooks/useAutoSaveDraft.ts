@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { saveSemesterGrades } from '../../use-cases/saveSemesterGrades'
+import { prepareSemesterEntry } from '../../use-cases/prepareSemesterEntry'
 import { resolveCreatedAt } from '../pages/addGrades/resolveCreatedAt'
 import type { Subject, GPAEntry } from '../../data/types'
 
@@ -23,6 +24,7 @@ export interface UseAutoSaveDraftParams {
   firebaseData: GPAEntry[]
   gpa: number
   setEditingSemesterData: (entry: GPAEntry | null) => void
+  setIsEditing: (val: boolean) => void
 }
 
 export function useAutoSaveDraft({
@@ -44,6 +46,7 @@ export function useAutoSaveDraft({
   firebaseData,
   gpa,
   setEditingSemesterData,
+  setIsEditing,
 }: UseAutoSaveDraftParams) {
   useEffect(() => {
     if (!isAuthenticated || !user || !dropdownsSelected) return
@@ -85,8 +88,7 @@ export function useAutoSaveDraft({
           firebaseData
         )
 
-        const newEntry = await saveSemesterGrades({
-          userId: user.uid,
+        const newEntry = prepareSemesterEntry({
           semester: semSelected,
           subjects,
           electives,
@@ -98,10 +100,23 @@ export function useAutoSaveDraft({
           createdAt,
         })
 
-        if (isEditing) {
-          localStorage.setItem('editingSemester', JSON.stringify(newEntry))
-          setEditingSemesterData(newEntry)
-        }
+        // Instantly transition local state to editing mode
+        localStorage.setItem('editingSemester', JSON.stringify(newEntry))
+        setEditingSemesterData(newEntry)
+        setIsEditing(true)
+
+        await saveSemesterGrades({
+          userId: user.uid,
+          semester: semSelected,
+          subjects,
+          electives,
+          grades,
+          electiveCreditsRequired,
+          university: universitySelected,
+          faculty: facultySelected,
+          degree: degreeSelected,
+          createdAt,
+        })
 
         if (newEntry.isDraft) {
           toast.success('Draft saved automatically!', { id: 'auto-save' })
@@ -134,5 +149,6 @@ export function useAutoSaveDraft({
     firebaseData,
     gpa,
     setEditingSemesterData,
+    setIsEditing,
   ])
 }

@@ -75,6 +75,7 @@ function Grades() {
     semSelected,
     setSemSelected,
     isEditing,
+    setIsEditing,
     editingSemesterData,
     setEditingSemesterData,
     subjects,
@@ -211,6 +212,7 @@ function Grades() {
     firebaseData,
     gpa,
     setEditingSemesterData,
+    setIsEditing,
   })
 
   return (
