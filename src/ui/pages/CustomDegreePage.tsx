@@ -14,7 +14,7 @@ import {
   suggestCustomDegreeDeletion,
 } from '../../adapters/firebase/curriculumRepository'
 import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
-import type { SemesterMap, Subject, SemesterSubjects } from '../../data/types'
+import type { SemesterMap } from '../../data/types'
 import { Spinner } from '../components/ui/spinner'
 import { db } from '../../adapters/firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
@@ -28,6 +28,7 @@ import {
 import { validateCustomDegreeForm } from '../../domain/curriculum/validateCustomDegreeForm'
 import type { DynamicSubject, DynamicSemester } from '../../domain/curriculum/customDegreeForm'
 import { mapSemesterMapToDynamicSemesters } from '../../domain/curriculum/mapSemesterMapToDynamicSemesters'
+import { mapDynamicSemestersToSemesterMap } from '../../domain/curriculum/mapDynamicSemestersToSemesterMap'
 
 export default function CustomDegreePage() {
   const navigate = useNavigate()
@@ -93,34 +94,7 @@ export default function CustomDegreePage() {
     const loadToast = toast.loading('Submitting deletion request...')
     try {
       // Map local dynamic state into SemesterMap schema
-      const mappedSemesters: SemesterMap = {}
-      semesters.forEach((sem) => {
-        const coreSubjects: Subject[] = []
-        const electiveSubjects: Subject[] = []
-
-        sem.subjects.forEach((sub) => {
-          const parsedSub: Subject = {
-            code: sub.code.trim(),
-            name: sub.name.trim(),
-            credits: Number(sub.credits),
-          }
-          if (sub.isElective) {
-            electiveSubjects.push(parsedSub)
-          } else {
-            coreSubjects.push(parsedSub)
-          }
-        })
-
-        const semesterData: SemesterSubjects = {
-          core: coreSubjects,
-          electiveCreditsRequired: sem.electiveCreditsRequired ? Number(sem.electiveCreditsRequired) : 0,
-        }
-        if (electiveSubjects.length > 0) {
-          semesterData.electives = electiveSubjects
-        }
-
-        mappedSemesters[sem.name] = semesterData
-      })
+      const mappedSemesters = mapDynamicSemestersToSemesterMap(semesters)
 
       const customDegreeData: CustomDegreeData = {
         degreeName: degreeName.trim(),
@@ -446,34 +420,7 @@ export default function CustomDegreePage() {
     setIsSaving(true)
     try {
       // Map local dynamic state into SemesterMap schema
-      const mappedSemesters: SemesterMap = {}
-      semesters.forEach((sem) => {
-        const coreSubjects: Subject[] = []
-        const electiveSubjects: Subject[] = []
-
-        sem.subjects.forEach((sub) => {
-          const parsedSub: Subject = {
-            code: sub.code.trim(),
-            name: sub.name.trim(),
-            credits: Number(sub.credits),
-          }
-          if (sub.isElective) {
-            electiveSubjects.push(parsedSub)
-          } else {
-            coreSubjects.push(parsedSub)
-          }
-        })
-
-        const semesterData: SemesterSubjects = {
-          core: coreSubjects,
-          electiveCreditsRequired: sem.electiveCreditsRequired ? Number(sem.electiveCreditsRequired) : 0,
-        }
-        if (electiveSubjects.length > 0) {
-          semesterData.electives = electiveSubjects
-        }
-
-        mappedSemesters[sem.name] = semesterData
-      })
+      const mappedSemesters = mapDynamicSemestersToSemesterMap(semesters)
 
       const customDegreeData: CustomDegreeData = {
         degreeName: degreeName.trim(),
