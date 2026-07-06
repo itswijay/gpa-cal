@@ -27,6 +27,7 @@ import { mapDynamicSemestersToSemesterMap } from '../../domain/curriculum/mapDyn
 import { useCustomDegreeFormState } from '../hooks/useCustomDegreeFormState'
 import { DeleteProgramDialog } from '../components/custom-degree/DeleteProgramDialog'
 import { SuggestDeletionDialog } from '../components/custom-degree/SuggestDeletionDialog'
+import { CurriculumDropdown } from '../components/custom-degree/CurriculumDropdown'
 
 export default function CustomDegreePage() {
   const navigate = useNavigate()
@@ -384,74 +385,55 @@ export default function CustomDegreePage() {
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6 space-y-4">
               
               {/* University Selector Dropdown */}
-              <div className="space-y-2">
-                <Label htmlFor="universitySelector" className="text-sm font-semibold text-foreground">
-                  Select University
-                </Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      id="universitySelector"
-                      variant="outline"
-                      className="w-full justify-between bg-muted/50 border-border hover:bg-accent text-foreground font-semibold h-11"
-                      disabled={isSaving}
-                    >
-                      <span className="truncate">
-                        {selectedUniversityOption === 'custom'
-                          ? 'Other / Custom University'
-                          : preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)?.name || 'Choose a University'}
+              <CurriculumDropdown
+                id="universitySelector"
+                label="Select University"
+                triggerPlaceholder="Choose a University"
+                selectedDisplayValue={
+                  selectedUniversityOption === 'custom'
+                    ? 'Other / Custom University'
+                    : preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)?.name
+                }
+                options={preloadedUniversities.map((uni) => ({
+                  value: uni.shortName,
+                  label: (
+                    <div className="flex flex-col items-start gap-0.5 w-full">
+                      <span className="font-bold text-xs text-primary">{uni.shortName}</span>
+                      <span className="text-[11px] text-muted-foreground truncate max-w-full">
+                        {uni.name}
                       </span>
-                      <ChevronDown className="h-4 w-4 ml-2 opacity-70 shrink-0" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[calc(100vw-3rem)] sm:w-[48rem] max-w-[50rem] bg-card border-border max-h-[300px] overflow-y-auto">
-                    {preloadedUniversities.map((uni) => (
-                      <DropdownMenuItem
-                        key={uni.shortName}
-                        onSelect={() => {
-                          setSelectedUniversityOption(uni.shortName)
-                          setUniversityShort(uni.shortName)
-                          setUniversityName(uni.name)
-                          const facNames = Object.keys(uni.faculties || {})
-                          setPreloadedFaculties(facNames)
-                          setSelectedFacultyOption('')
-                          setFacultyName('')
-                          setPreloadedDegrees([])
-                          setSelectedDegreeOption('')
-                          setDegreeName('')
-                        }}
-                        className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
-                      >
-                        <div className="flex flex-col items-start gap-0.5 w-full">
-                          <span className="font-bold text-xs text-primary">{uni.shortName}</span>
-                          <span className="text-[11px] text-muted-foreground truncate max-w-full">
-                            {uni.name}
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                    
-                    {/* Add Custom Fallback */}
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setSelectedUniversityOption('custom')
-                        setUniversityShort('')
-                        setUniversityName('')
-                        setPreloadedFaculties([])
-                        setSelectedFacultyOption('custom')
-                        setFacultyName('')
-                        setPreloadedDegrees([])
-                        setSelectedDegreeOption('custom')
-                        setDegreeName('')
-                      }}
-                      className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add Custom / New University
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    </div>
+                  ),
+                }))}
+                onSelectOption={(value) => {
+                  const uni = preloadedUniversities.find((u) => u.shortName === value)
+                  if (uni) {
+                    setSelectedUniversityOption(uni.shortName)
+                    setUniversityShort(uni.shortName)
+                    setUniversityName(uni.name)
+                    const facNames = Object.keys(uni.faculties || {})
+                    setPreloadedFaculties(facNames)
+                    setSelectedFacultyOption('')
+                    setFacultyName('')
+                    setPreloadedDegrees([])
+                    setSelectedDegreeOption('')
+                    setDegreeName('')
+                  }
+                }}
+                onSelectCustom={() => {
+                  setSelectedUniversityOption('custom')
+                  setUniversityShort('')
+                  setUniversityName('')
+                  setPreloadedFaculties([])
+                  setSelectedFacultyOption('custom')
+                  setFacultyName('')
+                  setPreloadedDegrees([])
+                  setSelectedDegreeOption('custom')
+                  setDegreeName('')
+                }}
+                customLabel="Add Custom / New University"
+                disabled={isSaving}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -494,129 +476,85 @@ export default function CustomDegreePage() {
 
               {/* Faculty Selector Dropdown */}
               {preloadedFaculties.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="facultySelector" className="text-sm font-semibold text-foreground">
-                    Select Faculty
-                  </Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        id="facultySelector"
-                        variant="outline"
-                        className="w-full justify-between bg-muted/50 border-border hover:bg-accent text-foreground font-semibold h-11"
-                        disabled={isSaving}
-                      >
-                        <span className="truncate">
-                          {selectedFacultyOption === 'custom'
-                            ? 'Other / Custom Faculty'
-                            : selectedFacultyOption || 'Choose a Faculty'}
-                        </span>
-                        <ChevronDown className="h-4 w-4 ml-2 opacity-70 shrink-0" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[calc(100vw-3rem)] sm:w-[48rem] max-w-[50rem] bg-card border-border max-h-[300px] overflow-y-auto">
-                      {preloadedFaculties.map((fac) => (
-                        <DropdownMenuItem
-                          key={fac}
-                          onSelect={() => {
-                            setSelectedFacultyOption(fac)
-                            setFacultyName(fac)
-                            
-                            // Get preloaded degrees under this faculty
-                            const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
-                            if (uni) {
-                              const degNames = Object.keys(uni.faculties[fac] || {})
-                              setPreloadedDegrees(degNames)
-                            } else {
-                              setPreloadedDegrees([])
-                            }
-                            setSelectedDegreeOption('')
-                            setDegreeName('')
-                          }}
-                          className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
-                        >
-                          {fac}
-                        </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setSelectedFacultyOption('custom')
-                          setFacultyName('')
-                          setPreloadedDegrees([])
-                          setSelectedDegreeOption('custom')
-                          setDegreeName('')
-                        }}
-                        className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Add Custom / New Faculty
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <CurriculumDropdown
+                  id="facultySelector"
+                  label="Select Faculty"
+                  triggerPlaceholder="Choose a Faculty"
+                  selectedDisplayValue={
+                    selectedFacultyOption === 'custom'
+                      ? 'Other / Custom Faculty'
+                      : selectedFacultyOption
+                  }
+                  options={preloadedFaculties.map((fac) => ({
+                    value: fac,
+                    label: fac,
+                  }))}
+                  onSelectOption={(value) => {
+                    setSelectedFacultyOption(value)
+                    setFacultyName(value)
+                    
+                    // Get preloaded degrees under this faculty
+                    const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
+                    if (uni) {
+                      const degNames = Object.keys(uni.faculties[value] || {})
+                      setPreloadedDegrees(degNames)
+                    } else {
+                      setPreloadedDegrees([])
+                    }
+                    setSelectedDegreeOption('')
+                    setDegreeName('')
+                  }}
+                  onSelectCustom={() => {
+                    setSelectedFacultyOption('custom')
+                    setFacultyName('')
+                    setPreloadedDegrees([])
+                    setSelectedDegreeOption('custom')
+                    setDegreeName('')
+                  }}
+                  customLabel="Add Custom / New Faculty"
+                  disabled={isSaving}
+                />
               )}
 
               {/* Degree Selector Dropdown */}
               {preloadedDegrees.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="degreeSelector" className="text-sm font-semibold text-foreground">
-                    Select Degree Program
-                  </Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        id="degreeSelector"
-                        variant="outline"
-                        className="w-full justify-between bg-muted/50 border-border hover:bg-accent text-foreground font-semibold h-11"
-                        disabled={isSaving}
-                      >
-                        <span className="truncate">
-                          {selectedDegreeOption === 'custom'
-                            ? 'Other / Custom Degree Program'
-                            : selectedDegreeOption || 'Choose a Degree Program'}
-                        </span>
-                        <ChevronDown className="h-4 w-4 ml-2 opacity-70 shrink-0" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[calc(100vw-3rem)] sm:w-[48rem] max-w-[50rem] bg-card border-border max-h-[300px] overflow-y-auto">
-                      {preloadedDegrees.map((deg) => (
-                        <DropdownMenuItem
-                          key={deg}
-                          onSelect={() => {
-                            setSelectedDegreeOption(deg)
-                            setDegreeName(deg)
-                            
-                            // AUTO-POPULATE: load existing preloaded semesters for this degree!
-                            const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
-                            if (uni && selectedFacultyOption) {
-                              const existingSems = uni.faculties[selectedFacultyOption]?.[deg] || {}
-                              
-                              const mappedSems = mapSemesterMapToDynamicSemesters(existingSems)
-                              if (mappedSems.length > 0) {
-                                setSemesters(mappedSems)
-                                toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
-                              }
-                            }
-                          }}
-                          className="hover:bg-accent focus:bg-accent py-2 cursor-pointer"
-                        >
-                          {deg}
-                        </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setSelectedDegreeOption('custom')
-                          setDegreeName('')
-                          setSemesters([{ id: 'sem_1', name: 'Semester 1', subjects: [{ code: '', name: '', credits: '3' }] }])
-                        }}
-                        className="hover:bg-accent focus:bg-accent border-t border-border mt-1 py-2 text-primary font-semibold text-xs cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Add Custom / New Degree Program
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <CurriculumDropdown
+                  id="degreeSelector"
+                  label="Select Degree Program"
+                  triggerPlaceholder="Choose a Degree Program"
+                  selectedDisplayValue={
+                    selectedDegreeOption === 'custom'
+                      ? 'Other / Custom Degree Program'
+                      : selectedDegreeOption
+                  }
+                  options={preloadedDegrees.map((deg) => ({
+                    value: deg,
+                    label: deg,
+                  }))}
+                  onSelectOption={(value) => {
+                    setSelectedDegreeOption(value)
+                    setDegreeName(value)
+                    
+                    // AUTO-POPULATE: load existing preloaded semesters for this degree!
+                    const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
+                    if (uni && selectedFacultyOption) {
+                      const existingSems = uni.faculties[selectedFacultyOption]?.[value] || {}
+                      
+                      const mappedSems = mapSemesterMapToDynamicSemesters(existingSems)
+                      if (mappedSems.length > 0) {
+                        setSemesters(mappedSems)
+                        toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
+                      }
+                    }
+                  }}
+                  onSelectCustom={() => {
+                    setSelectedDegreeOption('custom')
+                    setDegreeName('')
+                    setSemesters([{ id: 'sem_1', name: 'Semester 1', subjects: [{ code: '', name: '', credits: '3' }] }])
+                  }}
+                  customLabel="Add Custom / New Degree Program"
+                  disabled={isSaving}
+                />
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
