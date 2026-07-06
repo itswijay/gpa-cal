@@ -1,6 +1,6 @@
 import { Button } from '../components/ui/button'
 import { ChevronDown, ArrowLeft, GraduationCap } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import type { Subject } from '../../data/types'
 import { gradeOptions } from '../../data/grading'
 import { calculateSemesterGpa } from '../../domain/gpa/calculateSemesterGpa'
@@ -31,7 +31,6 @@ import {
 } from '../hooks/useSemesterFormState'
 
 function Grades() {
-  const [gpa, setGPA] = useState<number>(0)
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuth()
   const { data: firebaseData } = useFirebaseData()
@@ -92,7 +91,6 @@ function Grades() {
     firebaseData,
   })
 
-  const [selectedElectiveCredits, setSelectedElectiveCredits] = useState(0)
 
   const handleSave = async () => {
     if (semSelected === DEFAULT_SEMESTER) {
@@ -162,21 +160,15 @@ function Grades() {
     }
   }
 
-  useEffect(() => {
-    const newSelectedElectiveCredits = electives
+  const selectedElectiveCredits = useMemo(() => {
+    return electives
       .filter((elective: Subject) => grades[elective.code])
       .reduce((sum: number, elective: Subject) => sum + elective.credits, 0)
-    setSelectedElectiveCredits(newSelectedElectiveCredits)
   }, [grades, electives])
 
-  const calculateGPA = useCallback(() => {
+  const gpa = useMemo(() => {
     return calculateSemesterGpa(subjects, electives, grades)
   }, [subjects, electives, grades])
-
-  useEffect(() => {
-    const newGPA = calculateGPA()
-    setGPA(newGPA)
-  }, [calculateGPA])
 
   const {
     allCoreGradesSelected,
