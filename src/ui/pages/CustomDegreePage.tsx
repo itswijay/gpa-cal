@@ -25,19 +25,8 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu'
 
-interface DynamicSubject {
-  code: string
-  name: string
-  credits: string
-  isElective?: boolean
-}
-
-interface DynamicSemester {
-  id: string
-  name: string
-  electiveCreditsRequired?: string
-  subjects: DynamicSubject[]
-}
+import { validateCustomDegreeForm } from '../../domain/curriculum/validateCustomDegreeForm'
+import type { DynamicSubject, DynamicSemester } from '../../domain/curriculum/customDegreeForm'
 
 export default function CustomDegreePage() {
   const navigate = useNavigate()
@@ -464,57 +453,22 @@ export default function CustomDegreePage() {
     )
   }
 
-  const validateForm = (): boolean => {
-    if (isSuggested) {
-      if (!universityName.trim()) {
-        toast.error('Please enter the full university name for suggestion.')
-        return false
-      }
-      if (!universityShort.trim()) {
-        toast.error('Please enter the university abbreviation (e.g. SUSL).')
-        return false
-      }
-      if (!facultyName.trim()) {
-        toast.error('Please enter the faculty name.')
-        return false
-      }
-    }
-
-    if (!degreeName.trim()) {
-      toast.error('Please enter a degree program name.')
-      return false
-    }
-
-    for (const sem of semesters) {
-      if (sem.subjects.length === 0) {
-        toast.error(`Please add at least one subject to ${sem.name}.`)
-        return false
-      }
-
-      for (let i = 0; i < sem.subjects.length; i++) {
-        const sub = sem.subjects[i]
-        const displayIdx = i + 1
-
-        if (!sub.code.trim()) {
-          toast.error(`Subject ${displayIdx} in ${sem.name} is missing a code.`)
-          return false
-        }
-        if (!sub.name.trim()) {
-          toast.error(`Subject ${displayIdx} in ${sem.name} is missing a name.`)
-          return false
-        }
-        const parsedCredits = Number(sub.credits)
-        if (isNaN(parsedCredits) || parsedCredits <= 0 || parsedCredits > 12) {
-          toast.error(`Subject "${sub.code || displayIdx}" in ${sem.name} must have credits between 1 and 12.`)
-          return false
-        }
-      }
-    }
-    return true
-  }
-
   const handleSaveProgram = async () => {
-    if (!validateForm() || !user) return
+    if (!user) return
+
+    const validationResult = validateCustomDegreeForm({
+      isSuggested,
+      universityName,
+      universityShort,
+      facultyName,
+      degreeName,
+      semesters,
+    })
+
+    if (!validationResult.valid) {
+      toast.error(validationResult.error)
+      return
+    }
 
     setIsSaving(true)
     try {
