@@ -214,7 +214,8 @@ src/
 │   ├── components/         # Reusable UI components & dialogs
 │   │   ├── ui/             # shadcn/ui base elements
 │   │   ├── auth/           # Auth modals & conflict handlers
-│   │   └── analytics/      # Charts & goal tracking
+│   │   ├── analytics/      # Charts & goal tracking
+│   │   └── custom-degree/  # Custom degree builder components (modals, dropdowns, cards)
 │   ├── pages/              # Route pages (MainPage, AddGradesPage, etc.)
 │   ├── contexts/           # Context providers (Theme, Auth)
 │   └── hooks/              # Custom React hooks
@@ -233,6 +234,28 @@ src/
 ├── main.tsx                # Application entry point
 └── index.css               # Global styles
 ```
+
+### Clean Architecture Discipline
+
+This project strictly adheres to Clean Architecture principles to keep business logic separate from delivery mechanisms (React) and persistence frameworks (Firebase/local storage). 
+
+#### Core Layers:
+1. **Domain (`src/domain/`)**: 
+   * Contains pure business rules, GPA calculators, and validation logic.
+   * **Rule of Purity**: Absolutely **NO React components, hooks, or Firebase/Firestore imports** are allowed here.
+   * All domain logic consists of pure functions that can be tested in isolation without mocks.
+2. **Use Cases (`src/use-cases/`)**: 
+   * Orchestrates the flow of data to and from the domain and adapters.
+   * Performs coordination tasks (such as saving a semester or checking constraints before persistence).
+3. **Adapters (`src/adapters/`)**: 
+   * Gateway to external systems and infrastructure (Firebase Auth, Firestore databases, browser LocalStorage).
+   * Restricted to CRUD operations and data translation/mapping. No business or validation rules are kept here.
+4. **UI Presentation (`src/ui/`)**: 
+   * The React delivery layer containing pages, reusable presentation components, hooks, and routing.
+
+#### Key Architecture Rules:
+* **Dependency Rule**: Source code dependencies must only point inwards (UI/Adapters → Use Cases → Domain). The Domain layer knows nothing about the UI or databases.
+* **Separation of Concerns**: Page-level orchestration state (e.g. auth guards, route navigation) must not be mixed into presentational sub-components. Common components under `src/ui/components/` (like `CurriculumDropdown` or `SemesterCard`) remain pure and stateless presentation units.
 
 ### Data Flow Architecture
 
