@@ -370,8 +370,8 @@ This project is maintained by the GPA Calculator community. For license informat
 
 ## Project Status
 
-**Current Version**: 4.1.0  
+**Current Version**: 4.2.0  
 **Development Status**: Active  
-**Last Updated**: June 2026
+**Last Updated**: July 2026
 
 This application is actively maintained with regular feature updates and bug fixes. The development roadmap includes additional faculty integrations, enhanced analytics capabilities, and expanded institutional support.
