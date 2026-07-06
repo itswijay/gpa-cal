@@ -27,6 +27,7 @@ import {
 
 import { validateCustomDegreeForm } from '../../domain/curriculum/validateCustomDegreeForm'
 import type { DynamicSubject, DynamicSemester } from '../../domain/curriculum/customDegreeForm'
+import { mapSemesterMapToDynamicSemesters } from '../../domain/curriculum/mapSemesterMapToDynamicSemesters'
 
 export default function CustomDegreePage() {
   const navigate = useNavigate()
@@ -220,35 +221,7 @@ export default function CustomDegreePage() {
             }
             
             // Map Firestore SemesterMap back to our dynamic local state (sorted ascending)
-            const getSemNumber = (name: string): number => {
-              const num = name.match(/\d+/)
-              return num ? parseInt(num[0], 10) : 999
-            }
-
-            const sortedEntries = Object.entries(existing.semesters).sort((a, b) => {
-              return getSemNumber(a[0]) - getSemNumber(b[0])
-            })
-
-            const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => {
-              const coreMapped = (semData.core || []).map((sub) => ({
-                code: sub.code,
-                name: sub.name,
-                credits: String(sub.credits),
-                isElective: false,
-              }))
-              const electivesMapped = (semData.electives || []).map((sub) => ({
-                code: sub.code,
-                name: sub.name,
-                credits: String(sub.credits),
-                isElective: true,
-              }))
-              return {
-                id: `sem_${idx + 1}`,
-                name: semName,
-                electiveCreditsRequired: semData.electiveCreditsRequired ? String(semData.electiveCreditsRequired) : '0',
-                subjects: [...coreMapped, ...electivesMapped],
-              }
-            })
+            const mappedSems = mapSemesterMapToDynamicSemesters(existing.semesters)
 
             if (mappedSems.length > 0) {
               setSemesters(mappedSems)
@@ -808,35 +781,7 @@ export default function CustomDegreePage() {
                             if (uni && selectedFacultyOption) {
                               const existingSems = uni.faculties[selectedFacultyOption]?.[deg] || {}
                               
-                              const getSemNumber = (name: string): number => {
-                                const num = name.match(/\d+/)
-                                return num ? parseInt(num[0], 10) : 999
-                              }
-
-                              const sortedEntries = Object.entries(existingSems).sort((a, b) => {
-                                return getSemNumber(a[0]) - getSemNumber(b[0])
-                              })
-
-                              const mappedSems: DynamicSemester[] = sortedEntries.map(([semName, semData], idx) => {
-                                const coreMapped = (semData.core || []).map((sub) => ({
-                                  code: sub.code,
-                                  name: sub.name,
-                                  credits: String(sub.credits),
-                                  isElective: false,
-                                }))
-                                const electivesMapped = (semData.electives || []).map((sub) => ({
-                                  code: sub.code,
-                                  name: sub.name,
-                                  credits: String(sub.credits),
-                                  isElective: true,
-                                }))
-                                return {
-                                  id: `sem_${idx + 1}`,
-                                  name: semName,
-                                  electiveCreditsRequired: semData.electiveCreditsRequired ? String(semData.electiveCreditsRequired) : '0',
-                                  subjects: [...coreMapped, ...electivesMapped],
-                                }
-                              })
+                              const mappedSems = mapSemesterMapToDynamicSemesters(existingSems)
                               if (mappedSems.length > 0) {
                                 setSemesters(mappedSems)
                                 toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
