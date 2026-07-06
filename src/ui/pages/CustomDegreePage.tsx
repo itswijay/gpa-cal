@@ -57,6 +57,8 @@ export default function CustomDegreePage() {
     setSemesters,
     isLoadingExisting,
     hasExistingProgram,
+    hasUserEdited,
+    setHasUserEdited,
   } = useCustomDegreeFormState({ isAuthenticated, user, authLoading })
 
   const [isSaving, setIsSaving] = useState(false)
@@ -143,6 +145,7 @@ export default function CustomDegreePage() {
 
 
   const handleAddSemester = () => {
+    setHasUserEdited(true)
     const nextSemNumber = semesters.length + 1
     const newSem: DynamicSemester = {
       id: `sem_${Date.now()}`,
@@ -159,6 +162,7 @@ export default function CustomDegreePage() {
       toast.error('Your degree program must have at least one semester.')
       return
     }
+    setHasUserEdited(true)
     const filtered = semesters.filter((sem) => sem.id !== semId)
     // Re-index semester display names
     const reindexed = filtered.map((sem, idx) => ({
@@ -170,6 +174,7 @@ export default function CustomDegreePage() {
   }
 
   const handleAddSubject = (semId: string) => {
+    setHasUserEdited(true)
     setSemesters(
       semesters.map((sem) => {
         if (sem.id !== semId) return sem
@@ -182,6 +187,7 @@ export default function CustomDegreePage() {
   }
 
   const handleRemoveSubject = (semId: string, subjectIndex: number) => {
+    setHasUserEdited(true)
     setSemesters(
       semesters.map((sem) => {
         if (sem.id !== semId) return sem
@@ -203,6 +209,7 @@ export default function CustomDegreePage() {
     field: keyof DynamicSubject,
     value: string
   ) => {
+    setHasUserEdited(true)
     setSemesters(
       semesters.map((sem) => {
         if (sem.id !== semId) return sem
@@ -229,6 +236,7 @@ export default function CustomDegreePage() {
   }
 
   const handleSubjectElectiveToggle = (semId: string, subjectIndex: number) => {
+    setHasUserEdited(true)
     setSemesters(
       semesters.map((sem) => {
         if (sem.id !== semId) return sem
@@ -248,6 +256,7 @@ export default function CustomDegreePage() {
   }
 
   const handleSemesterElectiveCreditsChange = (semId: string, value: string) => {
+    setHasUserEdited(true)
     setSemesters(
       semesters.map((sem) => {
         if (sem.id !== semId) return sem
@@ -439,7 +448,10 @@ export default function CustomDegreePage() {
                     id="universityName"
                     placeholder="e.g. Sabaragamuwa University of Sri Lanka"
                     value={universityName}
-                    onChange={(e) => setUniversityName(e.target.value)}
+                    onChange={(e) => {
+                      setUniversityName(e.target.value)
+                      setHasUserEdited(true)
+                    }}
                     className={`bg-muted/50 border-border h-11 transition-all ${
                       selectedUniversityOption !== 'custom' && selectedUniversityOption !== ''
                         ? 'opacity-70 bg-muted cursor-not-allowed font-medium'
@@ -457,7 +469,10 @@ export default function CustomDegreePage() {
                     id="universityShort"
                     placeholder="e.g. SUSL"
                     value={universityShort}
-                    onChange={(e) => setUniversityShort(e.target.value)}
+                    onChange={(e) => {
+                      setUniversityShort(e.target.value)
+                      setHasUserEdited(true)
+                    }}
                     className={`bg-muted/50 border-border h-11 uppercase font-semibold transition-all ${
                       selectedUniversityOption !== 'custom' && selectedUniversityOption !== ''
                         ? 'opacity-70 bg-muted cursor-not-allowed font-semibold'
@@ -538,6 +553,7 @@ export default function CustomDegreePage() {
                       const mappedSems = mapSemesterMapToDynamicSemesters(existingSems)
                       if (mappedSems.length > 0) {
                         setSemesters(mappedSems)
+                        setHasUserEdited(false)
                         toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
                       }
                     }
@@ -546,6 +562,7 @@ export default function CustomDegreePage() {
                     setSelectedDegreeOption('custom')
                     setDegreeName('')
                     setSemesters([{ id: 'sem_1', name: 'Semester 1', subjects: [{ code: '', name: '', credits: '3' }] }])
+                    setHasUserEdited(false)
                   }}
                   customLabel="Add Custom / New Degree Program"
                   disabled={isSaving}
@@ -561,7 +578,10 @@ export default function CustomDegreePage() {
                     id="facultyName"
                     placeholder="e.g. Computing"
                     value={facultyName}
-                    onChange={(e) => setFacultyName(e.target.value)}
+                    onChange={(e) => {
+                      setFacultyName(e.target.value)
+                      setHasUserEdited(true)
+                    }}
                     className={`bg-muted/50 border-border h-11 transition-all ${
                       preloadedFaculties.length > 0 && selectedFacultyOption !== 'custom' && selectedFacultyOption !== ''
                         ? 'opacity-70 bg-muted cursor-not-allowed font-medium'
@@ -582,7 +602,10 @@ export default function CustomDegreePage() {
                     id="degreeName"
                     placeholder="e.g. BSc in Computer Science"
                     value={degreeName}
-                    onChange={(e) => setDegreeName(e.target.value)}
+                    onChange={(e) => {
+                      setDegreeName(e.target.value)
+                      setHasUserEdited(true)
+                    }}
                     className={`bg-muted/50 border-border h-11 transition-all ${
                       preloadedDegrees.length > 0 && selectedDegreeOption !== 'custom' && selectedDegreeOption !== ''
                         ? 'opacity-70 bg-muted cursor-not-allowed font-medium'
@@ -619,6 +642,11 @@ export default function CustomDegreePage() {
                   <p className="text-xs text-muted-foreground">
                     Allow an admin to review and approve this syllabus structure to be preloaded for all students.
                   </p>
+                  {!hasUserEdited && (
+                    <p className="text-[11px] text-muted-foreground italic mt-0.5">
+                      Make a change to your degree structure to enable this.
+                    </p>
+                  )}
                   {suggestionStatus === 'rejected' && rejectionReason && (
                     <p className="text-xs text-red-500 font-semibold bg-red-500/5 p-2 rounded border border-red-500/10 mt-1">
                       Note from Admin: {rejectionReason}
@@ -637,7 +665,7 @@ export default function CustomDegreePage() {
                       }
                     }}
                     className="h-5 w-5 rounded border-border text-primary focus:ring-primary bg-muted cursor-pointer"
-                    disabled={isSaving}
+                    disabled={isSaving || !hasUserEdited}
                   />
                 </div>
               </div>

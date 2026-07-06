@@ -49,6 +49,7 @@ export function useCustomDegreeFormState({
   ])
   const [isLoadingExisting, setIsLoadingExisting] = useState(true)
   const [hasExistingProgram, setHasExistingProgram] = useState(false)
+  const [hasUserEdited, setHasUserEdited] = useState(false)
 
   // 1. Fetch all preloaded/global universities
   useEffect(() => {
@@ -232,5 +233,7 @@ export function useCustomDegreeFormState({
     setIsLoadingExisting,
     hasExistingProgram,
     setHasExistingProgram,
+    hasUserEdited,
+    setHasUserEdited,
   }
 }
