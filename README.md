@@ -50,12 +50,19 @@ A comprehensive, clean and user-friendly GPA calculation and tracking applicatio
 - **Data Import**: Ability to import from JSON files for data portability
 - **Accessibility**: Full ARIA compliance and keyboard navigation support
 - **Legacy Data Migration**: Automatic conversion and compatibility for older data formats
+- **Admin Notifications**: Real-time Telegram notifications dispatched to administrators on new curriculum suggestions and deletion requests
 
 ---
 
 ## Recent Updates
 
-### Version 4.1.0 - Auto-save Grades and Draft Semesters (June 2026)
+### Version 4.2.0 - Clean Architecture & Custom Degree Enhancements
+
+- **Admin Notifications**: Integrated real-time Telegram notifications via secure Vercel Serverless Functions. Fires on new suggestions and deletion requests.
+- **Presenter Decoupling**: Extracted visual logic into pure components (`CurriculumDropdown`, `SemesterCard`, dialog modals).
+- **Edit Verification Gate**: Disabled the "Suggest for Public Database" option until the user edits metadata or structure.
+
+### Version 4.1.0 - Auto-save Grades and Draft Semesters
 
 - **Debounced Auto-Saving**: Automatically saves grades in real-time with a 1.5-second debounce. Restricted to logged-in users.
 - **Draft Semesters**: Save partially completed semesters, visually marked with a "Draft" badge.
@@ -202,37 +209,40 @@ Refer to `.env.example` for the complete template.
 ### Project Structure
 
 ```
-src/
-├── domain/                  # Pure business rules (GPA math, validations). NO external dependencies.
-│   ├── gpa/                # GPA math functions & tests
-│   └── curriculum/         # Curriculum rules & validations
-├── use-cases/               # Orchestration functions calling domain & adapters
-│   └── saveSemesterGrades.ts
-├── adapters/                # Infrastructure / external APIs (CRUD only)
-│   └── firebase/           # Firebase config, GPA & Curriculum repositories
-├── ui/                      # Presentation layer (React code)
-│   ├── components/         # Reusable UI components & dialogs
-│   │   ├── ui/             # shadcn/ui base elements
-│   │   ├── auth/           # Auth modals & conflict handlers
-│   │   ├── analytics/      # Charts & goal tracking
-│   │   └── custom-degree/  # Custom degree builder components (modals, dropdowns, cards)
-│   ├── pages/              # Route pages (MainPage, AddGradesPage, etc.)
-│   ├── contexts/           # Context providers (Theme, Auth)
-│   └── hooks/              # Custom React hooks
-├── data/                    # Static data and configuration
-│   ├── subjects/           # Modular curriculum by faculty
-│   │   ├── computing.ts
-│   │   ├── appliedSciences.ts
-│   │   ├── managementStudies.ts
-│   │   ├── agriculturalSciences.ts
-│   │   └── index.ts
-│   ├── types.ts            # TypeScript type definitions
-│   └── grading.ts          # Grade to point mapping system
-├── lib/                     # Global helpers & utilities
-│   └── utils.ts
-├── App.tsx                 # Main application component
-├── main.tsx                # Application entry point
-└── index.css               # Global styles
+gpa-cal/
+├── api/                     # Vercel serverless functions (e.g. notify-admin.ts)
+├── src/
+│   ├── domain/              # Pure business rules (GPA math, validations). NO external dependencies.
+│   │   ├── gpa/            # GPA math functions & tests
+│   │   └── curriculum/     # Curriculum rules & validations
+│   ├── use-cases/           # Orchestration functions calling domain & adapters
+│   │   └── saveSemesterGrades.ts
+│   ├── adapters/            # Infrastructure / external APIs (CRUD only)
+│   │   ├── firebase/       # Firebase config, GPA & Curriculum repositories
+│   │   └── notifications/  # Admin notification adapters (e.g. Telegram client-side helper)
+│   ├── ui/                  # Presentation layer (React code)
+│   │   ├── components/     # Reusable UI components & dialogs
+│   │   │   ├── ui/         # shadcn/ui base elements
+│   │   │   ├── auth/       # Auth modals & conflict handlers
+│   │   │   ├── analytics/  # Charts & goal tracking
+│   │   │   └── custom-degree/ # Custom degree builder components
+│   │   ├── pages/          # Route pages (MainPage, AddGradesPage, etc.)
+│   │   ├── contexts/       # Context providers (Theme, Auth)
+│   │   └── hooks/          # Custom React hooks
+│   ├── data/                # Static data and configuration
+│   │   ├── subjects/       # Modular curriculum by faculty
+│   │   │   ├── computing.ts
+│   │   │   ├── appliedSciences.ts
+│   │   │   ├── managementStudies.ts
+│   │   │   ├── agriculturalSciences.ts
+│   │   │   └── index.ts
+│   │   ├── types.ts        # TypeScript type definitions
+│   │   └── grading.ts      # Grade to point mapping system
+│   ├── lib/                 # Global helpers & utilities
+│   │   └── utils.ts
+│   ├── App.tsx             # Main application component
+│   ├── main.tsx            # Application entry point
+│   └── index.css           # Global styles
 ```
 
 ### Clean Architecture Discipline
