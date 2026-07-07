@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './config'
 import type { SemesterMap } from '../../data/types'
+import { notifyAdmin } from '../notifications/notifyAdmin'
 
 export interface CustomDegreeData {
   universityName?: string
@@ -50,6 +51,8 @@ export async function saveCustomDegree(
   data: CustomDegreeData,
   userEmail?: string
 ): Promise<void> {
+  const isNewSuggestion = !!(data.isSuggested && !data.suggestionId)
+
   const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
   
   let suggestionId = data.suggestionId
@@ -94,6 +97,12 @@ export async function saveCustomDegree(
   if (data.rejectionReason !== undefined) saveObj.rejectionReason = data.rejectionReason
 
   await setDoc(customDegreeRef, saveObj)
+
+  if (isNewSuggestion) {
+    notifyAdmin(
+      `🎓 New curriculum suggestion: ${data.degreeName} at ${data.universityName || ''} (${data.facultyName || ''}). Review in the admin panel.`
+    )
+  }
 }
 
 /**
@@ -158,6 +167,8 @@ export async function suggestCustomDegreeDeletion(
     deletionReason: reason,
     createdAt: serverTimestamp(),
   })
+
+  notifyAdmin(`🗑️ Deletion requested for ${data.degreeName} at ${data.universityName || ''}. Reason: ${reason}.`)
 }
 
 /**
