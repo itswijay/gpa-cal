@@ -1,24 +1,26 @@
 export interface CumulativeGPASemesterInput {
   gpa: number
+  credits: number
   isDraft?: boolean
 }
 
 /**
- * Calculates cumulative GPA by averaging per-semester GPA values.
+ * Calculates cumulative GPA by credit-weighting per-semester GPA values.
  * Excludes draft semesters.
  */
 export const calculateCumulativeGpa = (semesters: CumulativeGPASemesterInput[]): number => {
-  let totalGPA = 0
-  let semCount = 0
+  let totalWeightedGPA = 0
+  let totalCredits = 0
 
   semesters.forEach((sem) => {
     if (sem.isDraft) return
     const GPA = sem.gpa
-    if (GPA !== undefined) {
-      totalGPA += GPA
-      semCount += 1
+    const credits = sem.credits
+    if (GPA !== undefined && credits !== undefined) {
+      totalWeightedGPA += GPA * credits
+      totalCredits += credits
     }
   })
 
-  return semCount === 0 ? 0 : parseFloat((totalGPA / semCount).toFixed(3))
+  return totalCredits === 0 ? 0 : parseFloat((totalWeightedGPA / totalCredits).toFixed(3))
 }
