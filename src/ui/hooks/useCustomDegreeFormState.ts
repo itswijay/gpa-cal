@@ -123,7 +123,7 @@ export function useCustomDegreeFormState({
             if (existing.gpaMethod) {
               setGpaMethod(existing.gpaMethod)
             }
-            if (existing.gpaMethod === 'year-weighted' && existing.yearWeightedConfig) {
+            if (existing.yearWeightedConfig) {
               setSemestersPerYear(existing.yearWeightedConfig.semestersPerYear)
               const weightRecord: Record<number, string> = {}
               existing.yearWeightedConfig.yearWeights.forEach((yw) => {

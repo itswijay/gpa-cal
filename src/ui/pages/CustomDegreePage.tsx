@@ -137,10 +137,13 @@ export default function CustomDegreePage() {
   )
 
   // Auto-distribute weights evenly when year count changes due to user edits.
-  // Skipped during initial data load (hasUserEdited is false) to preserve loaded weights.
+  // Skipped during initial data load (hasUserEdited is false) to preserve loaded weights,
+  // and skipped while Normal is active so editing semesters there doesn't clobber a
+  // dormant year-weighted config the user isn't currently looking at.
   useEffect(() => {
     if (numYears <= 0) return
     if (!hasUserEdited) return
+    if (gpaMethod !== 'year-weighted') return
     const even = Math.floor(100 / numYears)
     const newWeights: Record<number, string> = {}
     for (let i = 1; i <= numYears; i++) {
@@ -371,15 +374,19 @@ export default function CustomDegreePage() {
       return
     }
 
-    // Validate year-weight config when method is year-weighted
+    // Always carry the year-weight config through (even while Normal is active) so
+    // switching methods back and forth doesn't wipe it from Firestore on save. Only
+    // block the save on incomplete/invalid weights when Year-Weighted is actually selected.
     let yearWeightedConfig: YearWeightedGpaConfig | undefined
-    if (gpaMethod === 'year-weighted') {
+    if (numYears > 0) {
       const yearWeights = Array.from({ length: numYears }, (_, i) => ({
         year: i + 1,
         weight: (Number(yearWeightInputs[i + 1]) || 0) / 100,
       }))
       yearWeightedConfig = { semestersPerYear, yearWeights }
-      const weightError = validateYearWeightConfig(yearWeightedConfig)
+    }
+    if (gpaMethod === 'year-weighted') {
+      const weightError = validateYearWeightConfig(yearWeightedConfig!)
       if (weightError) {
         toast.error(weightError)
         return
