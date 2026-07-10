@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
+import { useFirebaseData } from '../hooks/useFirebaseData'
 import {
   saveCustomDegree,
   deleteCustomDegree,
@@ -71,6 +72,55 @@ export default function CustomDegreePage() {
   } = useCustomDegreeFormState({ isAuthenticated, user, authLoading })
 
   const [isSaving, setIsSaving] = useState(false)
+
+  const { data: firebaseData } = useFirebaseData()
+  const activeDegreeEntry = firebaseData.find((s) => !s.isDraft)
+
+  // If the user has no custom degree of their own yet, but already has grades saved
+  // under a degree that exists in the public database, pre-select it and load its
+  // semesters automatically instead of requiring a manual dropdown reselection.
+  useEffect(() => {
+    if (isLoadingExisting || hasExistingProgram) return
+    if (preloadedUniversities.length === 0) return
+    if (!activeDegreeEntry?.university || !activeDegreeEntry.faculty || !activeDegreeEntry.degree) return
+
+    const uShort = activeDegreeEntry.university.toUpperCase().trim()
+    const uni = preloadedUniversities.find((u) => u.shortName === uShort)
+    if (!uni) return
+
+    const matchedFaculty = Object.keys(uni.faculties).find(
+      (f) => f.toLowerCase().trim() === activeDegreeEntry.faculty!.toLowerCase().trim()
+    )
+    if (!matchedFaculty) return
+
+    const matchedDegree = Object.keys(uni.faculties[matchedFaculty] || {}).find(
+      (d) => d.toLowerCase().trim() === activeDegreeEntry.degree!.toLowerCase().trim()
+    )
+    if (!matchedDegree) return
+
+    setSelectedUniversityOption(uShort)
+    setUniversityShort(uShort)
+    setUniversityName(uni.name)
+    setPreloadedFaculties(Object.keys(uni.faculties))
+    setSelectedFacultyOption(matchedFaculty)
+    setFacultyName(matchedFaculty)
+    setPreloadedDegrees(Object.keys(uni.faculties[matchedFaculty]))
+    setSelectedDegreeOption(matchedDegree)
+    setDegreeName(matchedDegree)
+
+    const mappedSems = mapSemesterMapToDynamicSemesters(uni.faculties[matchedFaculty][matchedDegree])
+    if (mappedSems.length > 0) {
+      setSemesters(mappedSems)
+      toast.success(`Loaded ${mappedSems.length} semesters from your current degree! You can now edit its GPA calculation method, or the curriculum itself.`)
+    }
+  }, [
+    isLoadingExisting,
+    hasExistingProgram,
+    preloadedUniversities,
+    activeDegreeEntry?.university,
+    activeDegreeEntry?.faculty,
+    activeDegreeEntry?.degree,
+  ])
 
   const numYears = useMemo(() => {
     if (semesters.length === 0 || semestersPerYear <= 0) return 0
@@ -724,25 +774,6 @@ export default function CustomDegreePage() {
               </div>
             </div>
 
-            {/* Dynamic Semesters Card List */}
-            <div className="space-y-6 mb-8">
-              <AnimatePresence initial={false}>
-                {semesters.map((sem) => (
-                  <SemesterCard
-                    key={sem.id}
-                    sem={sem}
-                    isSaving={isSaving}
-                    onRemoveSemester={handleRemoveSemester}
-                    onElectiveCreditsChange={handleSemesterElectiveCreditsChange}
-                    onAddSubject={handleAddSubject}
-                    onRemoveSubject={handleRemoveSubject}
-                    onSubjectChange={handleSubjectChange}
-                    onSubjectElectiveToggle={handleSubjectElectiveToggle}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-
             {/* GPA Calculation Method */}
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6 space-y-4">
               <div>
@@ -832,11 +863,30 @@ export default function CustomDegreePage() {
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground italic">
-                      Add semesters above to configure year weights.
+                      Add semesters below to configure year weights.
                     </p>
                   )}
                 </motion.div>
               )}
+            </div>
+
+            {/* Dynamic Semesters Card List */}
+            <div className="space-y-6 mb-8">
+              <AnimatePresence initial={false}>
+                {semesters.map((sem) => (
+                  <SemesterCard
+                    key={sem.id}
+                    sem={sem}
+                    isSaving={isSaving}
+                    onRemoveSemester={handleRemoveSemester}
+                    onElectiveCreditsChange={handleSemesterElectiveCreditsChange}
+                    onAddSubject={handleAddSubject}
+                    onRemoveSubject={handleRemoveSubject}
+                    onSubjectChange={handleSubjectChange}
+                    onSubjectElectiveToggle={handleSubjectElectiveToggle}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
 
             {/* Semester List Actions */}
