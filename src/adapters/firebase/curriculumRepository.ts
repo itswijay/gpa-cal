@@ -10,7 +10,7 @@ import {
   orderBy,
 } from 'firebase/firestore'
 import { db } from './config'
-import type { SemesterMap } from '../../data/types'
+import type { SemesterMap, GpaMethod, YearWeightedGpaConfig, DegreeGpaConfig } from '../../data/types'
 import { notifyAdmin } from '../notifications/notifyAdmin'
 
 export interface CustomDegreeData {
@@ -25,6 +25,8 @@ export interface CustomDegreeData {
   deletionReason?: string
   suggestionId?: string
   updatedAt?: unknown
+  gpaMethod?: GpaMethod
+  yearWeightedConfig?: YearWeightedGpaConfig
 }
 
 export interface CurriculumSuggestion {
@@ -40,6 +42,8 @@ export interface CurriculumSuggestion {
   rejectionReason?: string
   deletionReason?: string
   createdAt?: unknown
+  gpaMethod?: GpaMethod
+  yearWeightedConfig?: YearWeightedGpaConfig
 }
 
 // Custom Degree Operations
@@ -78,6 +82,8 @@ export async function saveCustomDegree(
       status: data.suggestionStatus || 'pending',
       rejectionReason: data.rejectionReason || '',
       createdAt: serverTimestamp(),
+      ...(data.gpaMethod ? { gpaMethod: data.gpaMethod } : {}),
+      ...(data.yearWeightedConfig ? { yearWeightedConfig: data.yearWeightedConfig } : {}),
     })
   }
 
@@ -95,6 +101,8 @@ export async function saveCustomDegree(
   if (data.facultyName !== undefined) saveObj.facultyName = data.facultyName
   if (data.suggestionStatus !== undefined) saveObj.suggestionStatus = data.suggestionStatus
   if (data.rejectionReason !== undefined) saveObj.rejectionReason = data.rejectionReason
+  if (data.gpaMethod !== undefined) saveObj.gpaMethod = data.gpaMethod
+  if (data.yearWeightedConfig !== undefined) saveObj.yearWeightedConfig = data.yearWeightedConfig
 
   await setDoc(customDegreeRef, saveObj)
 
@@ -210,12 +218,25 @@ export async function approveCurriculumSuggestion(
   faculties[suggestion.facultyName][suggestion.degreeName] = suggestion.semesters
 
   // 1. Update/Create global university document
-  await setDoc(universityRef, {
+  const universityUpdate: Record<string, unknown> = {
     name: suggestion.universityName,
     shortName: uShort,
     faculties: faculties,
     updatedAt: serverTimestamp(),
-  }, { merge: true })
+  }
+
+  if (suggestion.gpaMethod) {
+    const uniData = uniSnap.exists() ? uniSnap.data() : {}
+    const gpaConfigs = (uniData.gpaConfigs || {}) as Record<string, Record<string, DegreeGpaConfig>>
+    if (!gpaConfigs[suggestion.facultyName]) gpaConfigs[suggestion.facultyName] = {}
+    gpaConfigs[suggestion.facultyName][suggestion.degreeName] = {
+      defaultMethod: suggestion.gpaMethod,
+      ...(suggestion.yearWeightedConfig ? { yearWeightedConfig: suggestion.yearWeightedConfig } : {}),
+    }
+    universityUpdate.gpaConfigs = gpaConfigs
+  }
+
+  await setDoc(universityRef, universityUpdate, { merge: true })
 
   // 2. Mark suggestion as approved in queue
   const suggestionRef = doc(db, 'curriculaSuggestions', suggestion.id)
@@ -319,4 +340,20 @@ export async function rejectCurriculumDeletion(
     rejectionReason: feedback,
     updatedAt: serverTimestamp(),
   }, { merge: true })
+}
+
+/**
+ * Read the year-weighted GPA config for a specific degree from globalCurricula.
+ * Returns null if none has been approved for that degree yet.
+ */
+export async function getGlobalDegreeGpaConfig(
+  universityShort: string,
+  faculty: string,
+  degree: string
+): Promise<DegreeGpaConfig | null> {
+  const universityRef = doc(db, 'globalCurricula', universityShort.toUpperCase())
+  const snap = await getDoc(universityRef)
+  if (!snap.exists()) return null
+  const data = snap.data()
+  return (data.gpaConfigs?.[faculty]?.[degree] as DegreeGpaConfig) ?? null
 }
