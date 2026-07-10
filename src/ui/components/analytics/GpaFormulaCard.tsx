@@ -9,19 +9,28 @@ export function GpaFormulaCard({ config }: GpaFormulaCardProps) {
 
   return (
     <div className="mb-6 p-4 bg-card border border-border rounded-lg shadow-sm text-center">
-      <h2 className="text-sm font-medium text-muted-foreground mb-2">Your GPA Formula</h2>
+
+      <p className="text-xs sm:text-sm text-muted-foreground">
+        Semester GPA = Σ (Subject Grade Point × Credits) / Σ Credits
+      </p>
+      <div className="my-2 border-t border-dashed border-border w-16 mx-auto" />
+
       {isYearWeighted ? (
         <>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Year GPA = Σ (Semester GPA × Credits) / Σ Credits
+          </p>
+          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+            (across each year's {config.yearWeightedConfig!.semestersPerYear} semester(s))
+          </p>
+          <div className="my-2 border-t border-dashed border-border w-16 mx-auto" />
+
           <p className="text-sm sm:text-base font-semibold text-foreground break-words">
             FGPA ={' '}
             {[...config.yearWeightedConfig!.yearWeights]
               .sort((a, b) => a.year - b.year)
               .map((yw) => `(Year ${yw.year} × ${Math.round(yw.weight * 100)}%)`)
               .join(' + ')}
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Each year's GPA is the credit-weighted average of its{' '}
-            {config.yearWeightedConfig!.semestersPerYear} semester(s).
           </p>
         </>
       ) : (
