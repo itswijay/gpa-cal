@@ -22,6 +22,7 @@ import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
 import { Spinner } from '../components/ui/spinner'
 import { GPAChart } from '../components/analytics/GPAChart'
+import { GpaFormulaCard } from '../components/analytics/GpaFormulaCard'
 import { deleteSemesterData } from '../../adapters/firebase/gpaRepository'
 import { calculateCumulativeGpa } from '../../domain/gpa/calculateCumulativeGpa'
 import { calculateYearWeightedGpa } from '../../domain/gpa/calculateYearWeightedGpa'
@@ -310,6 +311,8 @@ const MainPage = () => {
 
           {/* Content Container */}
           <div className="max-w-2xl mx-auto">
+            <GpaFormulaCard config={resolvedGpaConfig} />
+
             {/* Page Title */}
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
               GPA Summary
