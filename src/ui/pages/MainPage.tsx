@@ -24,6 +24,12 @@ import { Spinner } from '../components/ui/spinner'
 import { GPAChart } from '../components/analytics/GPAChart'
 import { deleteSemesterData } from '../../adapters/firebase/gpaRepository'
 import { calculateCumulativeGpa } from '../../domain/gpa/calculateCumulativeGpa'
+import { calculateYearWeightedGpa } from '../../domain/gpa/calculateYearWeightedGpa'
+import { parseSemesterNumber } from '../../domain/curriculum/parseSemesterNumber'
+import { validateYearWeightConfig } from '../../domain/curriculum/validateYearWeightConfig'
+import { useResolvedGpaConfig } from '../hooks/useResolvedGpaConfig'
+import { saveGpaMethodPreference } from '../../adapters/storage/gpaMethodStore'
+import type { DegreeGpaConfig, YearWeightedGpaConfig } from '../../data/types'
 
 type Grade = {
   gpa: number
@@ -32,6 +38,7 @@ type Grade = {
   grades?: Record<string, string>
   faculty?: string
   degree?: string
+  university?: string
   isDraft?: boolean
 }
 
@@ -47,10 +54,54 @@ const MainPage = () => {
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
 
+  // Year-weighted GPA state
+  const [gpaDisplayMethod, setGpaDisplayMethod] = useState<'normal' | 'year-weighted'>('normal')
+  const [activeYearConfig, setActiveYearConfig] = useState<YearWeightedGpaConfig | undefined>()
+  const [inlineFormSemestersPerYear, setInlineFormSemestersPerYear] = useState(2)
+  const [inlineFormWeights, setInlineFormWeights] = useState<Record<number, string>>({})
+
+  // Derived values for year-weighted feature
+  const nonDraftSemesters = semesters.filter((s) => !s.isDraft)
+  const activeDegreeEntry = nonDraftSemesters[0]
+  const maxSemNumber = nonDraftSemesters.reduce(
+    (max, s) => Math.max(max, parseSemesterNumber(s.semester)),
+    0
+  )
+  const numInlineYears =
+    inlineFormSemestersPerYear > 0 ? Math.ceil(maxSemNumber / inlineFormSemestersPerYear) : 0
+  const inlineWeightSum = Object.values(inlineFormWeights).reduce(
+    (sum, w) => sum + (Number(w) || 0),
+    0
+  )
+
+  const { config: resolvedGpaConfig, loading: gpaConfigLoading } = useResolvedGpaConfig({
+    faculty: activeDegreeEntry?.faculty,
+    degree: activeDegreeEntry?.degree,
+    universityShort: activeDegreeEntry?.university,
+  })
+
+  // Sync toggle default and active config from resolved degree config
+  useEffect(() => {
+    if (!gpaConfigLoading) {
+      setGpaDisplayMethod(resolvedGpaConfig.defaultMethod)
+      setActiveYearConfig(resolvedGpaConfig.yearWeightedConfig)
+    }
+  }, [resolvedGpaConfig, gpaConfigLoading])
+
+  // Auto-distribute inline form weights evenly when number of years changes
+  useEffect(() => {
+    if (numInlineYears <= 0) return
+    const even = Math.floor(100 / numInlineYears)
+    const newWeights: Record<number, string> = {}
+    for (let i = 1; i <= numInlineYears; i++) {
+      newWeights[i] = i === 1 ? String(100 - even * (numInlineYears - 1)) : String(even)
+    }
+    setInlineFormWeights(newWeights)
+  }, [numInlineYears])
+
   // Detect sign-out by checking if user becomes null
   useEffect(() => {
     if (isSigningOut && !user && !isAuthenticated) {
-      // After a brief delay, hide the spinner
       setTimeout(() => {
         setIsSigningOut(false)
       }, 1000)
@@ -64,7 +115,6 @@ const MainPage = () => {
       localStorage.removeItem('showToast')
     }
 
-    // Check if user just signed in and has local data to migrate
     const justSignedIn = localStorage.getItem('justSignedIn')
     if (justSignedIn && isAuthenticated) {
       localStorage.removeItem('justSignedIn')
@@ -78,7 +128,6 @@ const MainPage = () => {
   // Load data based on authentication status
   useEffect(() => {
     if (isAuthenticated) {
-      // Use Firebase data for authenticated users
       const sortedData = [...firebaseData].sort((a, b) => {
         const semesterA = parseInt(a.semester.split(' ')[1])
         const semesterB = parseInt(b.semester.split(' ')[1])
@@ -86,7 +135,6 @@ const MainPage = () => {
       })
       setSemesters(sortedData)
     } else if (isGuest) {
-      // Use localStorage for guest users
       const savedData = JSON.parse(
         localStorage.getItem('gpaData') || '[]'
       ) as Grade[]
@@ -100,12 +148,36 @@ const MainPage = () => {
   }, [isAuthenticated, isGuest, firebaseData])
 
   const calculateGPA = () => {
+    if (gpaDisplayMethod === 'year-weighted' && activeYearConfig) {
+      return calculateYearWeightedGpa(semesters, activeYearConfig)
+    }
     return calculateCumulativeGpa(semesters)
+  }
+
+  const handleSavePersonalWeights = () => {
+    const yearWeights = Array.from({ length: numInlineYears }, (_, i) => ({
+      year: i + 1,
+      weight: (Number(inlineFormWeights[i + 1]) || 0) / 100,
+    }))
+    const yearWeightedConfig: YearWeightedGpaConfig = {
+      semestersPerYear: inlineFormSemestersPerYear,
+      yearWeights,
+    }
+    const error = validateYearWeightConfig(yearWeightedConfig)
+    if (error) {
+      toast.error(error)
+      return
+    }
+    if (activeDegreeEntry?.faculty && activeDegreeEntry?.degree) {
+      const newConfig: DegreeGpaConfig = { defaultMethod: 'year-weighted', yearWeightedConfig }
+      saveGpaMethodPreference(activeDegreeEntry.faculty, activeDegreeEntry.degree, newConfig)
+    }
+    setActiveYearConfig(yearWeightedConfig)
+    toast.success('Year-weighted GPA configuration saved for this degree.')
   }
 
   const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all GPA data?')) {
-      // Clear local storage entries
       localStorage.removeItem('gpaData')
       localStorage.removeItem('lockedUniversity')
       localStorage.removeItem('lockedFaculty')
@@ -131,9 +203,7 @@ const MainPage = () => {
   }
 
   const handleEditSemester = (semester: Grade) => {
-    // Check if the semester has grades stored
     if (!semester.grades || Object.keys(semester.grades).length === 0) {
-      // Show a warning for old data
       if (
         window.confirm(
           `This semester was saved before the edit feature was available. ` +
@@ -141,12 +211,10 @@ const MainPage = () => {
             `Do you want to continue?`
         )
       ) {
-        // Store the semester data for editing
         localStorage.setItem('editingSemester', JSON.stringify(semester))
         navigate('/addGrades')
       }
     } else {
-      // Store the semester data for editing
       localStorage.setItem('editingSemester', JSON.stringify(semester))
       navigate('/addGrades')
     }
@@ -158,7 +226,6 @@ const MainPage = () => {
     ) {
       try {
         if (isAuthenticated && user) {
-          // Delete from Firebase
           await deleteSemesterData(user.uid, semesterToDelete)
           const updatedSemesters = semesters
             .filter((sem) => sem.semester !== semesterToDelete)
@@ -170,7 +237,6 @@ const MainPage = () => {
           setSemesters(updatedSemesters)
           toast.success(`${semesterToDelete} has been deleted`)
         } else {
-          // Delete from localStorage
           const updatedSemesters = semesters
             .filter((sem) => sem.semester !== semesterToDelete)
             .sort((a, b) => {
@@ -283,7 +349,6 @@ const MainPage = () => {
 
             {/* Right: GitHub & Auth Button */}
             <div className="flex-1 flex justify-end items-center gap-2">
-              {/* GitHub Button - Hidden on mobile */}
               <a
                 href="https://github.com/itswijay/gpa-cal"
                 target="_blank"
@@ -294,7 +359,6 @@ const MainPage = () => {
                 <Github className="w-5 h-5" />
               </a>
 
-              {/* Auth Button */}
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
               ) : isAuthenticated ? (
@@ -448,25 +512,152 @@ const MainPage = () => {
               )}
             </AnimatePresence>
 
-            {/* GPA Box */}
-            {semesters.filter((s) => !s.isDraft).length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="mt-8 p-4 sm:p-4 bg-card border border-border rounded-lg shadow-sm w-full max-w-[220px] mx-auto"
-              >
-                <div className="text-center">
-                  <h3 className="text-sm sm:text-base font-medium text-muted-foreground mb-2">
-                    Your GPA
-                  </h3>
-                  <div className="text-2xl sm:text-3xl font-bold text-primary">
-                    <CountUp end={calculateGPA()} decimals={3} duration={1.5} />
-                  </div>
-                </div>
-              </motion.div>
-            )}
+            {/* GPA Display Section */}
+            {nonDraftSemesters.length > 0 && (
+              <div className="mt-8 flex flex-col items-center gap-4">
 
+                {/* GPA Method Toggle */}
+                <div className="inline-flex rounded-lg border border-border overflow-hidden shadow-sm text-xs font-medium">
+                  <button
+                    onClick={() => setGpaDisplayMethod('normal')}
+                    className={`px-4 py-2 transition-colors ${
+                      gpaDisplayMethod === 'normal'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    Normal GPA
+                  </button>
+                  <button
+                    onClick={() => setGpaDisplayMethod('year-weighted')}
+                    className={`px-4 py-2 transition-colors ${
+                      gpaDisplayMethod === 'year-weighted'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    Year-Weighted FGPA
+                  </button>
+                </div>
+
+                {/* GPA Value Box */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="p-4 bg-card border border-border rounded-lg shadow-sm w-full max-w-[220px]"
+                >
+                  <div className="text-center">
+                    <h3 className="text-sm sm:text-base font-medium text-muted-foreground mb-2">
+                      {gpaDisplayMethod === 'year-weighted' ? 'Final GPA (FGPA)' : 'Your GPA'}
+                    </h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary">
+                      {gpaDisplayMethod === 'year-weighted' && !activeYearConfig ? (
+                        <span className="text-lg text-muted-foreground">—</span>
+                      ) : (
+                        <CountUp
+                          end={calculateGPA()}
+                          decimals={gpaDisplayMethod === 'year-weighted' ? 2 : 3}
+                          duration={1.5}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Inline Year-Weight Configuration Form */}
+                {gpaDisplayMethod === 'year-weighted' && !activeYearConfig && !gpaConfigLoading && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="w-full max-w-sm bg-card border border-border rounded-lg shadow-sm p-4 space-y-4"
+                  >
+                    <p className="text-xs text-muted-foreground">
+                      No year-weight config found for this degree. Set one below or{' '}
+                      <button
+                        onClick={() => navigate('/custom-degree')}
+                        className="text-primary underline underline-offset-2 hover:text-primary/80"
+                      >
+                        suggest it to the public database
+                      </button>
+                      .
+                    </p>
+
+                    {/* Semesters per year */}
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs font-medium text-foreground whitespace-nowrap">
+                        Semesters per year
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={6}
+                        value={inlineFormSemestersPerYear}
+                        onChange={(e) =>
+                          setInlineFormSemestersPerYear(Math.max(1, Number(e.target.value)))
+                        }
+                        className="w-16 text-center text-sm border border-border rounded px-2 py-1 bg-muted"
+                      />
+                    </div>
+
+                    {/* Year weight rows */}
+                    {numInlineYears > 0 && (
+                      <div className="space-y-2">
+                        {Array.from({ length: numInlineYears }, (_, i) => i + 1).map((year) => (
+                          <div key={year} className="flex items-center gap-3">
+                            <span className="text-xs font-medium text-muted-foreground w-12">
+                              Year {year}
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={inlineFormWeights[year] ?? ''}
+                              onChange={(e) =>
+                                setInlineFormWeights((prev) => ({
+                                  ...prev,
+                                  [year]: e.target.value,
+                                }))
+                              }
+                              className="w-16 text-center text-sm border border-border rounded px-2 py-1 bg-muted"
+                            />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
+                        ))}
+
+                        {/* Weight sum indicator */}
+                        <p
+                          className={`text-xs font-medium ${
+                            Math.abs(inlineWeightSum - 100) <= 0.5
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-500'
+                          }`}
+                        >
+                          Total: {inlineWeightSum}% {Math.abs(inlineWeightSum - 100) <= 0.5 ? '✓' : '(must be 100%)'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={handleSavePersonalWeights}
+                        className="flex-1 text-xs bg-primary text-primary-foreground px-3 py-2 rounded hover:bg-primary/90 transition-colors font-medium"
+                      >
+                        Save for this degree
+                      </button>
+                      <button
+                        onClick={() => navigate('/custom-degree')}
+                        className="flex-1 text-xs border border-border bg-card px-3 py-2 rounded hover:bg-accent transition-colors font-medium"
+                      >
+                        Suggest to public
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
 
           </div>
         </div>
@@ -502,7 +693,6 @@ const MainPage = () => {
         onOpenChange={setShowMigrationDialog}
         onMigrationComplete={() => {
           toast.success('Data imported successfully!')
-          // Refresh the page to load data from Firestore
           window.location.reload()
         }}
       />
