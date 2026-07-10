@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import type { DegreeGpaConfig } from '../../data/types'
-import { getGpaMethodPreference } from '../../adapters/storage/gpaMethodStore'
 import { getGlobalDegreeGpaConfig, getCustomDegree } from '../../adapters/firebase/curriculumRepository'
 
 const DEFAULT_CONFIG: DegreeGpaConfig = { defaultMethod: 'normal' }
@@ -48,22 +47,11 @@ export function useResolvedGpaConfig({ faculty, degree, universityShort, userId 
             return
           }
         } catch {
-          // fall through to localStorage / global config
+          // fall through to global config
         }
       }
 
-      // 2. Personal localStorage preference takes next priority
-      const personal = getGpaMethodPreference(faculty!, degree!)
-      if (personal) {
-        if (!cancelled) {
-          setConfig(personal)
-          setIsPersonal(true)
-          setLoading(false)
-        }
-        return
-      }
-
-      // 3. Firestore global config (one-time fetch — only changes on admin approval)
+      // 2. Firestore global config (one-time fetch — only changes on admin approval)
       if (universityShort) {
         try {
           const global = await getGlobalDegreeGpaConfig(universityShort, faculty!, degree!)
@@ -78,7 +66,7 @@ export function useResolvedGpaConfig({ faculty, degree, universityShort, userId 
         }
       }
 
-      // 4. Default
+      // 3. Default
       if (!cancelled) {
         setConfig(DEFAULT_CONFIG)
         setIsPersonal(false)
