@@ -57,6 +57,7 @@ const MainPage = () => {
     faculty: activeDegreeEntry?.faculty,
     degree: activeDegreeEntry?.degree,
     universityShort: activeDegreeEntry?.university,
+    userId: user?.uid,
   })
 
   // Detect sign-out by checking if user becomes null
