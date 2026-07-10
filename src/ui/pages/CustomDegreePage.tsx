@@ -25,7 +25,7 @@ import { DeleteProgramDialog } from '../components/custom-degree/DeleteProgramDi
 import { SuggestDeletionDialog } from '../components/custom-degree/SuggestDeletionDialog'
 import { CurriculumDropdown } from '../components/custom-degree/CurriculumDropdown'
 import { SemesterCard } from '../components/custom-degree/SemesterCard'
-import type { GpaMethod, YearWeightedGpaConfig } from '../../data/types'
+import type { YearWeightedGpaConfig } from '../../data/types'
 
 export default function CustomDegreePage() {
   const navigate = useNavigate()
@@ -62,14 +62,15 @@ export default function CustomDegreePage() {
     hasExistingProgram,
     hasUserEdited,
     setHasUserEdited,
+    gpaMethod,
+    setGpaMethod,
+    semestersPerYear,
+    setSemestersPerYear,
+    yearWeightInputs,
+    setYearWeightInputs,
   } = useCustomDegreeFormState({ isAuthenticated, user, authLoading })
 
   const [isSaving, setIsSaving] = useState(false)
-
-  // GPA Calculation Method state
-  const [gpaMethod, setGpaMethod] = useState<GpaMethod>('normal')
-  const [semestersPerYear, setSemestersPerYear] = useState(2)
-  const [yearWeightInputs, setYearWeightInputs] = useState<Record<number, string>>({})
 
   const numYears = useMemo(() => {
     if (semesters.length === 0 || semestersPerYear <= 0) return 0
@@ -85,9 +86,11 @@ export default function CustomDegreePage() {
     0
   )
 
-  // Auto-distribute weights evenly when year count changes
+  // Auto-distribute weights evenly when year count changes due to user edits.
+  // Skipped during initial data load (hasUserEdited is false) to preserve loaded weights.
   useEffect(() => {
     if (numYears <= 0) return
+    if (!hasUserEdited) return
     const even = Math.floor(100 / numYears)
     const newWeights: Record<number, string> = {}
     for (let i = 1; i <= numYears; i++) {

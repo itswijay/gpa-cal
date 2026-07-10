@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
-import type { SemesterMap } from '../../data/types'
+import type { SemesterMap, GpaMethod } from '../../data/types'
 import type { DynamicSemester } from '../../domain/curriculum/customDegreeForm'
 import { mapSemesterMapToDynamicSemesters } from '../../domain/curriculum/mapSemesterMapToDynamicSemesters'
 import { db } from '../../adapters/firebase/config'
@@ -50,6 +50,9 @@ export function useCustomDegreeFormState({
   const [isLoadingExisting, setIsLoadingExisting] = useState(true)
   const [hasExistingProgram, setHasExistingProgram] = useState(false)
   const [hasUserEdited, setHasUserEdited] = useState(false)
+  const [gpaMethod, setGpaMethod] = useState<GpaMethod>('normal')
+  const [semestersPerYear, setSemestersPerYear] = useState(2)
+  const [yearWeightInputs, setYearWeightInputs] = useState<Record<number, string>>({})
 
   // 1. Fetch all preloaded/global universities
   useEffect(() => {
@@ -114,6 +117,19 @@ export function useCustomDegreeFormState({
 
             if (mappedSems.length > 0) {
               setSemesters(mappedSems)
+            }
+
+            // Restore GPA calculation method and year-weight config if previously saved
+            if (existing.gpaMethod) {
+              setGpaMethod(existing.gpaMethod)
+            }
+            if (existing.gpaMethod === 'year-weighted' && existing.yearWeightedConfig) {
+              setSemestersPerYear(existing.yearWeightedConfig.semestersPerYear)
+              const weightRecord: Record<number, string> = {}
+              existing.yearWeightedConfig.yearWeights.forEach((yw) => {
+                weightRecord[yw.year] = String(Math.round(yw.weight * 100))
+              })
+              setYearWeightInputs(weightRecord)
             }
           }
         } catch (error) {
@@ -235,5 +251,11 @@ export function useCustomDegreeFormState({
     setHasExistingProgram,
     hasUserEdited,
     setHasUserEdited,
+    gpaMethod,
+    setGpaMethod,
+    semestersPerYear,
+    setSemestersPerYear,
+    yearWeightInputs,
+    setYearWeightInputs,
   }
 }
