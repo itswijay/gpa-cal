@@ -20,6 +20,7 @@ import { useResolvedCurricula } from '../hooks/useResolvedCurricula'
 import { saveSemesterGrades } from '../../use-cases/saveSemesterGrades'
 import { saveSemesterGradesLocally } from '../../use-cases/saveSemesterGradesLocally'
 import { CustomDegreeAuthDialog } from '../components/auth/CustomDegreeAuthDialog'
+import { CustomDegreeConflictDialog } from '../components/auth/CustomDegreeConflictDialog'
 import { resolveCreatedAt } from './addGrades/resolveCreatedAt'
 import {
   DEFAULT_UNIVERSITY,
@@ -36,6 +37,7 @@ function Grades() {
   const { data: firebaseData } = useFirebaseData()
   const [isSaving, setIsSaving] = useState(false)
   const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const [showConflictDialog, setShowConflictDialog] = useState(false)
 
   const handleCustomDegreeClick = () => {
     if (!isAuthenticated) {
@@ -43,9 +45,22 @@ function Grades() {
       return
     }
 
-    // Selecting an existing university/faculty/degree on the custom degree page
-    // auto-populates its current semesters/subjects, so this is safe even if the
-    // user already has grades saved under a preloaded degree.
+    // If they already created a custom degree, let them manage/edit it at any time!
+    if (customDegree) {
+      navigate('/custom-degree')
+      return
+    }
+
+    // Check if the user already has saved semesters under preloaded faculties
+    const hasPreloadedData =
+      firebaseData.length > 0 &&
+      firebaseData.some((entry) => entry.faculty && entry.faculty !== 'Custom Degree')
+
+    if (hasPreloadedData) {
+      setShowConflictDialog(true)
+      return
+    }
+
     navigate('/custom-degree')
   }
   const { resolvedCurricula, customDegree } = useResolvedCurricula(isAuthenticated, user)
@@ -597,6 +612,7 @@ function Grades() {
       </footer>
 
       <CustomDegreeAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+      <CustomDegreeConflictDialog open={showConflictDialog} onOpenChange={setShowConflictDialog} />
     </div>
   )
 }
