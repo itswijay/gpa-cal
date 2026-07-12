@@ -293,6 +293,11 @@ export default function ModerationPage() {
                       <p className="text-xs text-muted-foreground font-semibold mt-1 truncate">
                         {suggestion.facultyName}
                       </p>
+                      {suggestion.gpaMethod === 'year-weighted' && (
+                        <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                          Year-Weighted (FGPA)
+                        </span>
+                      )}
 
                       <div className="mt-4 pt-3 border-t border-border flex flex-col gap-1.5 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1.5">

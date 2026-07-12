@@ -86,6 +86,15 @@ export default function CustomDegreePage() {
     0
   )
 
+  const distributeEvenWeights = () => {
+    const even = Math.floor(100 / numYears)
+    const newWeights: Record<number, string> = {}
+    for (let i = 1; i <= numYears; i++) {
+      newWeights[i] = i === 1 ? String(100 - even * (numYears - 1)) : String(even)
+    }
+    setYearWeightInputs(newWeights)
+  }
+
   // Auto-distribute weights evenly when year count changes due to user edits.
   // Skipped during initial data load (hasUserEdited is false) to preserve loaded weights,
   // and skipped while Normal is active so editing semesters there doesn't clobber a
@@ -94,13 +103,20 @@ export default function CustomDegreePage() {
     if (numYears <= 0) return
     if (!hasUserEdited) return
     if (gpaMethod !== 'year-weighted') return
-    const even = Math.floor(100 / numYears)
-    const newWeights: Record<number, string> = {}
-    for (let i = 1; i <= numYears; i++) {
-      newWeights[i] = i === 1 ? String(100 - even * (numYears - 1)) : String(even)
-    }
-    setYearWeightInputs(newWeights)
+    distributeEvenWeights()
   }, [numYears])
+
+  // Seed even weights when Year-Weighted becomes active and no weights are set yet
+  // (e.g. right after auto-loading a preloaded degree). Weights loaded from a saved
+  // config or already typed by the user are preserved.
+  useEffect(() => {
+    if (gpaMethod !== 'year-weighted' || numYears <= 0) return
+    const hasAnyWeight = Array.from({ length: numYears }, (_, i) => yearWeightInputs[i + 1]).some(
+      (w) => w !== undefined && w !== ''
+    )
+    if (hasAnyWeight) return
+    distributeEvenWeights()
+  }, [gpaMethod])
 
   // Deletion Dialog States
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -766,7 +782,10 @@ export default function CustomDegreePage() {
                     name="gpaMethod"
                     value="normal"
                     checked={gpaMethod === 'normal'}
-                    onChange={() => setGpaMethod('normal')}
+                    onChange={() => {
+                      setGpaMethod('normal')
+                      setHasUserEdited(true)
+                    }}
                     disabled={isSaving}
                     className="accent-primary"
                   />
@@ -778,7 +797,10 @@ export default function CustomDegreePage() {
                     name="gpaMethod"
                     value="year-weighted"
                     checked={gpaMethod === 'year-weighted'}
-                    onChange={() => setGpaMethod('year-weighted')}
+                    onChange={() => {
+                      setGpaMethod('year-weighted')
+                      setHasUserEdited(true)
+                    }}
                     disabled={isSaving}
                     className="accent-primary"
                   />
@@ -800,7 +822,10 @@ export default function CustomDegreePage() {
                       min={1}
                       max={6}
                       value={semestersPerYear}
-                      onChange={(e) => setSemestersPerYear(Math.max(1, Number(e.target.value)))}
+                      onChange={(e) => {
+                        setSemestersPerYear(Math.max(1, Number(e.target.value)))
+                        setHasUserEdited(true)
+                      }}
                       disabled={isSaving}
                       className="w-16 text-center text-sm border border-border rounded px-2 py-1 bg-muted"
                     />
@@ -817,9 +842,10 @@ export default function CustomDegreePage() {
                             min={0}
                             max={100}
                             value={yearWeightInputs[year] ?? ''}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setYearWeightInputs((prev) => ({ ...prev, [year]: e.target.value }))
-                            }
+                              setHasUserEdited(true)
+                            }}
                             disabled={isSaving}
                             className="w-16 text-center text-sm border border-border rounded px-2 py-1 bg-muted"
                           />
