@@ -747,25 +747,6 @@ export default function CustomDegreePage() {
               </div>
             </div>
 
-            {/* Dynamic Semesters Card List */}
-            <div className="space-y-6 mb-8">
-              <AnimatePresence initial={false}>
-                {semesters.map((sem) => (
-                  <SemesterCard
-                    key={sem.id}
-                    sem={sem}
-                    isSaving={isSaving}
-                    onRemoveSemester={handleRemoveSemester}
-                    onElectiveCreditsChange={handleSemesterElectiveCreditsChange}
-                    onAddSubject={handleAddSubject}
-                    onRemoveSubject={handleRemoveSubject}
-                    onSubjectChange={handleSubjectChange}
-                    onSubjectElectiveToggle={handleSubjectElectiveToggle}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-
             {/* GPA Calculation Method */}
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6 space-y-4">
               <div>
@@ -870,6 +851,25 @@ export default function CustomDegreePage() {
                   )}
                 </motion.div>
               )}
+            </div>
+
+            {/* Dynamic Semesters Card List */}
+            <div className="space-y-6 mb-8">
+              <AnimatePresence initial={false}>
+                {semesters.map((sem) => (
+                  <SemesterCard
+                    key={sem.id}
+                    sem={sem}
+                    isSaving={isSaving}
+                    onRemoveSemester={handleRemoveSemester}
+                    onElectiveCreditsChange={handleSemesterElectiveCreditsChange}
+                    onAddSubject={handleAddSubject}
+                    onRemoveSubject={handleRemoveSubject}
+                    onSubjectChange={handleSubjectChange}
+                    onSubjectElectiveToggle={handleSubjectElectiveToggle}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
 
             {/* Semester List Actions */}
