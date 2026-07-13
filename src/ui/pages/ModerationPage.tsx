@@ -293,11 +293,21 @@ export default function ModerationPage() {
                       <p className="text-xs text-muted-foreground font-semibold mt-1 truncate">
                         {suggestion.facultyName}
                       </p>
-                      {suggestion.gpaMethod === 'year-weighted' && (
-                        <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                          Year-Weighted (FGPA)
-                        </span>
-                      )}
+                      {suggestion.status !== 'delete_pending' &&
+                        (suggestion.gpaMethod === 'year-weighted' || suggestion.isCurriculumChange) && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {suggestion.gpaMethod === 'year-weighted' && (
+                              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                Year-Weighted (FGPA)
+                              </span>
+                            )}
+                            {suggestion.isCurriculumChange && (
+                              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                Curriculum Change
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                       <div className="mt-4 pt-3 border-t border-border flex flex-col gap-1.5 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1.5">
@@ -443,15 +453,22 @@ export default function ModerationPage() {
               {selectedSuggestion.gpaMethod && (
                 <div className="p-4 bg-muted/30 border rounded-xl space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">GPA Calculation Method</Label>
-                  <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                    selectedSuggestion.gpaMethod === 'year-weighted'
-                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                      : 'bg-muted text-muted-foreground border border-border'
-                  }`}>
-                    {selectedSuggestion.gpaMethod === 'year-weighted'
-                      ? 'Year-Weighted (FGPA)'
-                      : 'Normal (Credit-Weighted)'}
-                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                      selectedSuggestion.gpaMethod === 'year-weighted'
+                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                        : 'bg-muted text-muted-foreground border border-border'
+                    }`}>
+                      {selectedSuggestion.gpaMethod === 'year-weighted'
+                        ? 'Year-Weighted (FGPA)'
+                        : 'Normal (Credit-Weighted)'}
+                    </span>
+                    {selectedSuggestion.status !== 'delete_pending' && selectedSuggestion.isCurriculumChange && (
+                      <span className="inline-block text-[11px] px-2 py-0.5 rounded-full font-bold uppercase bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Curriculum Change
+                      </span>
+                    )}
+                  </div>
                   {selectedSuggestion.gpaMethod === 'year-weighted' &&
                     selectedSuggestion.yearWeightedConfig && (
                       <div className="mt-2 space-y-1">

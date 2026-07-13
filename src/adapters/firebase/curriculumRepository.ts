@@ -12,6 +12,7 @@ import {
 import { db } from './config'
 import type { SemesterMap, GpaMethod, YearWeightedGpaConfig, DegreeGpaConfig } from '../../data/types'
 import { notifyAdmin } from '../notifications/notifyAdmin'
+import { hasCurriculumChanged } from '../../domain/curriculum/hasCurriculumChanged'
 
 export interface CustomDegreeData {
   universityName?: string
@@ -44,6 +45,7 @@ export interface CurriculumSuggestion {
   createdAt?: unknown
   gpaMethod?: GpaMethod
   yearWeightedConfig?: YearWeightedGpaConfig
+  isCurriculumChange?: boolean
 }
 
 // Custom Degree Operations
@@ -69,6 +71,13 @@ export async function saveCustomDegree(
       suggestionId = suggestionRef.id
     }
     
+    const existingSemesters = await getGlobalDegreeSemesters(
+      data.universityShort || '',
+      data.facultyName || '',
+      data.degreeName
+    )
+    const isCurriculumChange = hasCurriculumChanged(existingSemesters, data.semesters)
+
     const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
     await setDoc(suggestionRef, {
       id: suggestionId,
@@ -82,6 +91,7 @@ export async function saveCustomDegree(
       status: data.suggestionStatus || 'pending',
       rejectionReason: data.rejectionReason || '',
       createdAt: serverTimestamp(),
+      isCurriculumChange: isCurriculumChange,
       ...(data.gpaMethod ? { gpaMethod: data.gpaMethod } : {}),
       ...(data.yearWeightedConfig ? { yearWeightedConfig: data.yearWeightedConfig } : {}),
     })
@@ -367,4 +377,20 @@ export async function getGlobalDegreeGpaConfig(
   if (!snap.exists()) return null
   const data = snap.data()
   return (data.gpaConfigs?.[faculty]?.[degree] as DegreeGpaConfig) ?? null
+}
+
+/**
+ * Read the currently public semester structure for a specific degree from globalCurricula.
+ * Returns null if the university, faculty, or degree doesn't exist yet.
+ */
+export async function getGlobalDegreeSemesters(
+  uShort: string,
+  faculty: string,
+  degree: string
+): Promise<SemesterMap | null> {
+  const universityRef = doc(db, 'globalCurricula', uShort.toUpperCase())
+  const snap = await getDoc(universityRef)
+  if (!snap.exists()) return null
+  const data = snap.data()
+  return (data.faculties?.[faculty]?.[degree] as SemesterMap) ?? null
 }
