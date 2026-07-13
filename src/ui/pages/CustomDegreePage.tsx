@@ -104,6 +104,7 @@ export default function CustomDegreePage() {
     if (!hasUserEdited) return
     if (gpaMethod !== 'year-weighted') return
     distributeEvenWeights()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately narrow: only re-run on year-count change, see comment above
   }, [numYears])
 
   // Seed even weights when Year-Weighted becomes active and no weights are set yet
@@ -116,6 +117,7 @@ export default function CustomDegreePage() {
     )
     if (hasAnyWeight) return
     distributeEvenWeights()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately narrow: only re-run on method change, see comment above
   }, [gpaMethod])
 
   // Deletion Dialog States

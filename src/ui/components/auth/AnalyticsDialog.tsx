@@ -1,4 +1,4 @@
-import { BarChart3, RefreshCw, Target, Save } from 'lucide-react'
+import { BarChart3, RefreshCw, Target, Save, type LucideIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ interface AnalyticsDialogProps {
 }
 
 interface FeatureItem {
-  icon: any
+  icon: LucideIcon
   title: string
   description: string
   comingSoon?: boolean
