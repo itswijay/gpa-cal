@@ -11,6 +11,7 @@ import {
   saveCustomDegree,
   deleteCustomDegree,
   suggestCustomDegreeDeletion,
+  getGlobalDegreeGpaConfig,
 } from '../../adapters/firebase/curriculumRepository'
 import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
 import { Spinner } from '../components/ui/spinner'
@@ -627,13 +628,30 @@ export default function CustomDegreePage() {
                     const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
                     if (uni && selectedFacultyOption) {
                       const existingSems = uni.faculties[selectedFacultyOption]?.[value] || {}
-                      
+
                       const mappedSems = mapSemesterMapToDynamicSemesters(existingSems)
                       if (mappedSems.length > 0) {
                         setSemesters(mappedSems)
                         setHasUserEdited(false)
                         toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
                       }
+
+                      // AUTO-POPULATE: load this degree's GPA calculation method
+                      getGlobalDegreeGpaConfig(selectedUniversityOption, selectedFacultyOption, value).then(
+                        (config) => {
+                          setGpaMethod(config?.defaultMethod || 'normal')
+                          if (config?.yearWeightedConfig) {
+                            setSemestersPerYear(config.yearWeightedConfig.semestersPerYear)
+                            const weightRecord: Record<number, string> = {}
+                            config.yearWeightedConfig.yearWeights.forEach((yw) => {
+                              weightRecord[yw.year] = String(Math.round(yw.weight * 100))
+                            })
+                            setYearWeightInputs(weightRecord)
+                          } else {
+                            setYearWeightInputs({})
+                          }
+                        }
+                      )
                     }
                   }}
                   onSelectCustom={() => {
