@@ -38,3 +38,17 @@ export interface GPAEntry {
   createdAt?: Timestamp
   updatedAt?: Timestamp
 }
+
+export type GpaMethod = 'normal' | 'year-weighted'
+
+export type YearWeight = { year: number; weight: number }
+
+export type YearWeightedGpaConfig = {
+  semestersPerYear: number
+  yearWeights: YearWeight[]
+}
+
+export type DegreeGpaConfig = {
+  defaultMethod: GpaMethod
+  yearWeightedConfig?: YearWeightedGpaConfig
+}

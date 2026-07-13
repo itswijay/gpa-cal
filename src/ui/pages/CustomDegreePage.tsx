@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, Trash2, Save, GraduationCap, AlertCircle } from 'lucide-react'
@@ -11,18 +11,22 @@ import {
   saveCustomDegree,
   deleteCustomDegree,
   suggestCustomDegreeDeletion,
+  getGlobalDegreeGpaConfig,
 } from '../../adapters/firebase/curriculumRepository'
 import type { CustomDegreeData } from '../../adapters/firebase/curriculumRepository'
 import { Spinner } from '../components/ui/spinner'
 import { validateCustomDegreeForm } from '../../domain/curriculum/validateCustomDegreeForm'
+import { validateYearWeightConfig } from '../../domain/curriculum/validateYearWeightConfig'
 import type { DynamicSubject, DynamicSemester } from '../../domain/curriculum/customDegreeForm'
 import { mapSemesterMapToDynamicSemesters } from '../../domain/curriculum/mapSemesterMapToDynamicSemesters'
 import { mapDynamicSemestersToSemesterMap } from '../../domain/curriculum/mapDynamicSemestersToSemesterMap'
+import { parseSemesterNumber } from '../../domain/curriculum/parseSemesterNumber'
 import { useCustomDegreeFormState } from '../hooks/useCustomDegreeFormState'
 import { DeleteProgramDialog } from '../components/custom-degree/DeleteProgramDialog'
 import { SuggestDeletionDialog } from '../components/custom-degree/SuggestDeletionDialog'
 import { CurriculumDropdown } from '../components/custom-degree/CurriculumDropdown'
 import { SemesterCard } from '../components/custom-degree/SemesterCard'
+import type { YearWeightedGpaConfig } from '../../data/types'
 
 export default function CustomDegreePage() {
   const navigate = useNavigate()
@@ -59,9 +63,63 @@ export default function CustomDegreePage() {
     hasExistingProgram,
     hasUserEdited,
     setHasUserEdited,
+    gpaMethod,
+    setGpaMethod,
+    semestersPerYear,
+    setSemestersPerYear,
+    yearWeightInputs,
+    setYearWeightInputs,
   } = useCustomDegreeFormState({ isAuthenticated, user, authLoading })
 
   const [isSaving, setIsSaving] = useState(false)
+
+  const numYears = useMemo(() => {
+    if (semesters.length === 0 || semestersPerYear <= 0) return 0
+    const maxSemNum = semesters.reduce(
+      (max, sem) => Math.max(max, parseSemesterNumber(sem.name)),
+      0
+    )
+    return Math.ceil(maxSemNum / semestersPerYear)
+  }, [semesters, semestersPerYear])
+
+  const weightSum = Object.values(yearWeightInputs).reduce(
+    (sum, w) => sum + (Number(w) || 0),
+    0
+  )
+
+  const distributeEvenWeights = () => {
+    const even = Math.floor(100 / numYears)
+    const newWeights: Record<number, string> = {}
+    for (let i = 1; i <= numYears; i++) {
+      newWeights[i] = i === 1 ? String(100 - even * (numYears - 1)) : String(even)
+    }
+    setYearWeightInputs(newWeights)
+  }
+
+  // Auto-distribute weights evenly when year count changes due to user edits.
+  // Skipped during initial data load (hasUserEdited is false) to preserve loaded weights,
+  // and skipped while Normal is active so editing semesters there doesn't clobber a
+  // dormant year-weighted config the user isn't currently looking at.
+  useEffect(() => {
+    if (numYears <= 0) return
+    if (!hasUserEdited) return
+    if (gpaMethod !== 'year-weighted') return
+    distributeEvenWeights()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately narrow: only re-run on year-count change, see comment above
+  }, [numYears])
+
+  // Seed even weights when Year-Weighted becomes active and no weights are set yet
+  // (e.g. right after auto-loading a preloaded degree). Weights loaded from a saved
+  // config or already typed by the user are preserved.
+  useEffect(() => {
+    if (gpaMethod !== 'year-weighted' || numYears <= 0) return
+    const hasAnyWeight = Array.from({ length: numYears }, (_, i) => yearWeightInputs[i + 1]).some(
+      (w) => w !== undefined && w !== ''
+    )
+    if (hasAnyWeight) return
+    distributeEvenWeights()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately narrow: only re-run on method change, see comment above
+  }, [gpaMethod])
 
   // Deletion Dialog States
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -285,6 +343,25 @@ export default function CustomDegreePage() {
       return
     }
 
+    // Always carry the year-weight config through (even while Normal is active) so
+    // switching methods back and forth doesn't wipe it from Firestore on save. Only
+    // block the save on incomplete/invalid weights when Year-Weighted is actually selected.
+    let yearWeightedConfig: YearWeightedGpaConfig | undefined
+    if (numYears > 0) {
+      const yearWeights = Array.from({ length: numYears }, (_, i) => ({
+        year: i + 1,
+        weight: (Number(yearWeightInputs[i + 1]) || 0) / 100,
+      }))
+      yearWeightedConfig = { semestersPerYear, yearWeights }
+    }
+    if (gpaMethod === 'year-weighted') {
+      const weightError = validateYearWeightConfig(yearWeightedConfig!)
+      if (weightError) {
+        toast.error(weightError)
+        return
+      }
+    }
+
     setIsSaving(true)
     try {
       // Map local dynamic state into SemesterMap schema
@@ -300,6 +377,8 @@ export default function CustomDegreePage() {
         rejectionReason: isSuggested ? undefined : rejectionReason,
         suggestionId: suggestionId || undefined,
         semesters: mappedSemesters,
+        gpaMethod,
+        yearWeightedConfig,
       }
 
       await saveCustomDegree(user.uid, customDegreeData, user.email || undefined)
@@ -549,13 +628,30 @@ export default function CustomDegreePage() {
                     const uni = preloadedUniversities.find((u) => u.shortName === selectedUniversityOption)
                     if (uni && selectedFacultyOption) {
                       const existingSems = uni.faculties[selectedFacultyOption]?.[value] || {}
-                      
+
                       const mappedSems = mapSemesterMapToDynamicSemesters(existingSems)
                       if (mappedSems.length > 0) {
                         setSemesters(mappedSems)
                         setHasUserEdited(false)
                         toast.success(`Loaded ${mappedSems.length} semesters from preloaded database! You can now edit them or add new semesters.`)
                       }
+
+                      // AUTO-POPULATE: load this degree's GPA calculation method
+                      getGlobalDegreeGpaConfig(selectedUniversityOption, selectedFacultyOption, value).then(
+                        (config) => {
+                          setGpaMethod(config?.defaultMethod || 'normal')
+                          if (config?.yearWeightedConfig) {
+                            setSemestersPerYear(config.yearWeightedConfig.semestersPerYear)
+                            const weightRecord: Record<number, string> = {}
+                            config.yearWeightedConfig.yearWeights.forEach((yw) => {
+                              weightRecord[yw.year] = String(Math.round(yw.weight * 100))
+                            })
+                            setYearWeightInputs(weightRecord)
+                          } else {
+                            setYearWeightInputs({})
+                          }
+                        }
+                      )
                     }
                   }}
                   onSelectCustom={() => {
@@ -669,6 +765,112 @@ export default function CustomDegreePage() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* GPA Calculation Method */}
+            <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground mb-1">GPA Calculation Method</h2>
+                <p className="text-xs text-muted-foreground">
+                  Choose how the final GPA is calculated for this degree program.
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="gpaMethod"
+                    value="normal"
+                    checked={gpaMethod === 'normal'}
+                    onChange={() => {
+                      setGpaMethod('normal')
+                      setHasUserEdited(true)
+                    }}
+                    disabled={isSaving}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm font-medium">Normal (Credit-Weighted)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="gpaMethod"
+                    value="year-weighted"
+                    checked={gpaMethod === 'year-weighted'}
+                    onChange={() => {
+                      setGpaMethod('year-weighted')
+                      setHasUserEdited(true)
+                    }}
+                    disabled={isSaving}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm font-medium">Year-Weighted (FGPA)</span>
+                </label>
+              </div>
+
+              {gpaMethod === 'year-weighted' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-3 pt-2 border-t border-border"
+                >
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs font-medium whitespace-nowrap">Semesters per year</Label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={6}
+                      value={semestersPerYear}
+                      onChange={(e) => {
+                        setSemestersPerYear(Math.max(1, Number(e.target.value)))
+                        setHasUserEdited(true)
+                      }}
+                      disabled={isSaving}
+                      className="w-16 text-center text-sm border border-border rounded px-2 py-1 bg-muted"
+                    />
+                  </div>
+
+                  {numYears > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Year weights (must total 100%)</p>
+                      {Array.from({ length: numYears }, (_, i) => i + 1).map((year) => (
+                        <div key={year} className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-muted-foreground w-14">Year {year}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={yearWeightInputs[year] ?? ''}
+                            onChange={(e) => {
+                              setYearWeightInputs((prev) => ({ ...prev, [year]: e.target.value }))
+                              setHasUserEdited(true)
+                            }}
+                            disabled={isSaving}
+                            className="w-16 text-center text-sm border border-border rounded px-2 py-1 bg-muted"
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                        </div>
+                      ))}
+                      <p
+                        className={`text-xs font-medium ${
+                          Math.abs(weightSum - 100) <= 0.5
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-500'
+                        }`}
+                      >
+                        Total: {weightSum}%{' '}
+                        {Math.abs(weightSum - 100) <= 0.5 ? '✓' : '(must be 100%)'}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      Add semesters above to configure year weights.
+                    </p>
+                  )}
+                </motion.div>
+              )}
             </div>
 
             {/* Dynamic Semesters Card List */}

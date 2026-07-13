@@ -22,8 +22,11 @@ import { MigrationDialog } from '../components/auth/MigrationDialog'
 import { HowToUseDialog } from '../components/HowToUseDialog'
 import { Spinner } from '../components/ui/spinner'
 import { GPAChart } from '../components/analytics/GPAChart'
+import { GpaFormulaCard } from '../components/analytics/GpaFormulaCard'
 import { deleteSemesterData } from '../../adapters/firebase/gpaRepository'
 import { calculateCumulativeGpa } from '../../domain/gpa/calculateCumulativeGpa'
+import { calculateYearWeightedGpa } from '../../domain/gpa/calculateYearWeightedGpa'
+import { useResolvedGpaConfig } from '../hooks/useResolvedGpaConfig'
 
 type Grade = {
   gpa: number
@@ -32,6 +35,7 @@ type Grade = {
   grades?: Record<string, string>
   faculty?: string
   degree?: string
+  university?: string
   isDraft?: boolean
 }
 
@@ -47,10 +51,19 @@ const MainPage = () => {
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
 
+  const nonDraftSemesters = semesters.filter((s) => !s.isDraft)
+  const activeDegreeEntry = nonDraftSemesters[0]
+
+  const { config: resolvedGpaConfig } = useResolvedGpaConfig({
+    faculty: activeDegreeEntry?.faculty,
+    degree: activeDegreeEntry?.degree,
+    universityShort: activeDegreeEntry?.university,
+    userId: user?.uid,
+  })
+
   // Detect sign-out by checking if user becomes null
   useEffect(() => {
     if (isSigningOut && !user && !isAuthenticated) {
-      // After a brief delay, hide the spinner
       setTimeout(() => {
         setIsSigningOut(false)
       }, 1000)
@@ -64,7 +77,6 @@ const MainPage = () => {
       localStorage.removeItem('showToast')
     }
 
-    // Check if user just signed in and has local data to migrate
     const justSignedIn = localStorage.getItem('justSignedIn')
     if (justSignedIn && isAuthenticated) {
       localStorage.removeItem('justSignedIn')
@@ -78,7 +90,6 @@ const MainPage = () => {
   // Load data based on authentication status
   useEffect(() => {
     if (isAuthenticated) {
-      // Use Firebase data for authenticated users
       const sortedData = [...firebaseData].sort((a, b) => {
         const semesterA = parseInt(a.semester.split(' ')[1])
         const semesterB = parseInt(b.semester.split(' ')[1])
@@ -86,7 +97,6 @@ const MainPage = () => {
       })
       setSemesters(sortedData)
     } else if (isGuest) {
-      // Use localStorage for guest users
       const savedData = JSON.parse(
         localStorage.getItem('gpaData') || '[]'
       ) as Grade[]
@@ -100,12 +110,14 @@ const MainPage = () => {
   }, [isAuthenticated, isGuest, firebaseData])
 
   const calculateGPA = () => {
+    if (resolvedGpaConfig.defaultMethod === 'year-weighted' && resolvedGpaConfig.yearWeightedConfig) {
+      return calculateYearWeightedGpa(semesters, resolvedGpaConfig.yearWeightedConfig)
+    }
     return calculateCumulativeGpa(semesters)
   }
 
   const handleClearData = async () => {
     if (window.confirm('Are you sure you want to clear all GPA data?')) {
-      // Clear local storage entries
       localStorage.removeItem('gpaData')
       localStorage.removeItem('lockedUniversity')
       localStorage.removeItem('lockedFaculty')
@@ -131,9 +143,7 @@ const MainPage = () => {
   }
 
   const handleEditSemester = (semester: Grade) => {
-    // Check if the semester has grades stored
     if (!semester.grades || Object.keys(semester.grades).length === 0) {
-      // Show a warning for old data
       if (
         window.confirm(
           `This semester was saved before the edit feature was available. ` +
@@ -141,12 +151,10 @@ const MainPage = () => {
             `Do you want to continue?`
         )
       ) {
-        // Store the semester data for editing
         localStorage.setItem('editingSemester', JSON.stringify(semester))
         navigate('/addGrades')
       }
     } else {
-      // Store the semester data for editing
       localStorage.setItem('editingSemester', JSON.stringify(semester))
       navigate('/addGrades')
     }
@@ -158,7 +166,6 @@ const MainPage = () => {
     ) {
       try {
         if (isAuthenticated && user) {
-          // Delete from Firebase
           await deleteSemesterData(user.uid, semesterToDelete)
           const updatedSemesters = semesters
             .filter((sem) => sem.semester !== semesterToDelete)
@@ -170,7 +177,6 @@ const MainPage = () => {
           setSemesters(updatedSemesters)
           toast.success(`${semesterToDelete} has been deleted`)
         } else {
-          // Delete from localStorage
           const updatedSemesters = semesters
             .filter((sem) => sem.semester !== semesterToDelete)
             .sort((a, b) => {
@@ -283,7 +289,6 @@ const MainPage = () => {
 
             {/* Right: GitHub & Auth Button */}
             <div className="flex-1 flex justify-end items-center gap-2">
-              {/* GitHub Button - Hidden on mobile */}
               <a
                 href="https://github.com/itswijay/gpa-cal"
                 target="_blank"
@@ -294,7 +299,6 @@ const MainPage = () => {
                 <Github className="w-5 h-5" />
               </a>
 
-              {/* Auth Button */}
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
               ) : isAuthenticated ? (
@@ -307,6 +311,8 @@ const MainPage = () => {
 
           {/* Content Container */}
           <div className="max-w-2xl mx-auto">
+            <GpaFormulaCard config={resolvedGpaConfig} />
+
             {/* Page Title */}
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
               GPA Summary
@@ -448,25 +454,28 @@ const MainPage = () => {
               )}
             </AnimatePresence>
 
-            {/* GPA Box */}
-            {semesters.filter((s) => !s.isDraft).length > 0 && (
+            {/* GPA Display Section */}
+            {nonDraftSemesters.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="mt-8 p-4 sm:p-4 bg-card border border-border rounded-lg shadow-sm w-full max-w-[220px] mx-auto"
+                className="mt-8 p-4 bg-card border border-border rounded-lg shadow-sm w-full max-w-[220px] mx-auto"
               >
                 <div className="text-center">
                   <h3 className="text-sm sm:text-base font-medium text-muted-foreground mb-2">
-                    Your GPA
+                    {resolvedGpaConfig.defaultMethod === 'year-weighted' ? 'Final GPA (FGPA)' : 'Your GPA'}
                   </h3>
                   <div className="text-2xl sm:text-3xl font-bold text-primary">
-                    <CountUp end={calculateGPA()} decimals={3} duration={1.5} />
+                    <CountUp
+                      end={calculateGPA()}
+                      decimals={resolvedGpaConfig.defaultMethod === 'year-weighted' ? 2 : 3}
+                      duration={1.5}
+                    />
                   </div>
                 </div>
               </motion.div>
             )}
-
 
           </div>
         </div>
@@ -502,7 +511,6 @@ const MainPage = () => {
         onOpenChange={setShowMigrationDialog}
         onMigrationComplete={() => {
           toast.success('Data imported successfully!')
-          // Refresh the page to load data from Firestore
           window.location.reload()
         }}
       />
