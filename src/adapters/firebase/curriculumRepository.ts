@@ -291,6 +291,7 @@ export async function approveCurriculumDeletion(
   if (uniSnap.exists()) {
     const data = uniSnap.data()
     const faculties = data.faculties || {}
+    const gpaConfigs = (data.gpaConfigs || {}) as Record<string, Record<string, DegreeGpaConfig>>
 
     if (faculties[suggestion.facultyName] && faculties[suggestion.facultyName][suggestion.degreeName]) {
       delete faculties[suggestion.facultyName][suggestion.degreeName]
@@ -300,8 +301,18 @@ export async function approveCurriculumDeletion(
         delete faculties[suggestion.facultyName]
       }
 
+      if (gpaConfigs[suggestion.facultyName] && gpaConfigs[suggestion.facultyName][suggestion.degreeName]) {
+        delete gpaConfigs[suggestion.facultyName][suggestion.degreeName]
+
+        // If a faculty has no more gpaConfigs entries, clean it up completely
+        if (Object.keys(gpaConfigs[suggestion.facultyName]).length === 0) {
+          delete gpaConfigs[suggestion.facultyName]
+        }
+      }
+
       await setDoc(universityRef, {
         faculties: faculties,
+        gpaConfigs: gpaConfigs,
         updatedAt: serverTimestamp(),
       }, { merge: true })
     }
