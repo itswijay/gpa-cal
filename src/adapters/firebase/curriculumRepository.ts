@@ -13,6 +13,7 @@ import { db } from './config'
 import type { SemesterMap, GpaMethod, YearWeightedGpaConfig, DegreeGpaConfig } from '../../data/types'
 import { notifyAdmin } from '../notifications/notifyAdmin'
 import { hasCurriculumChanged } from '../../domain/curriculum/hasCurriculumChanged'
+import { buildSuggestionNotificationMessage } from '../../domain/curriculum/buildSuggestionNotificationMessage'
 
 export interface CustomDegreeData {
   universityName?: string
@@ -62,7 +63,8 @@ export async function saveCustomDegree(
   const customDegreeRef = doc(db, 'users', userId, 'customDegree', 'default')
   
   let suggestionId = data.suggestionId
-  
+  let isCurriculumChange = false
+
   if (data.isSuggested) {
     if (!suggestionId) {
       // Create new suggestion document with auto-generated ID
@@ -76,7 +78,7 @@ export async function saveCustomDegree(
       data.facultyName || '',
       data.degreeName
     )
-    const isCurriculumChange = hasCurriculumChanged(existingSemesters, data.semesters)
+    isCurriculumChange = hasCurriculumChanged(existingSemesters, data.semesters)
 
     const suggestionRef = doc(db, 'curriculaSuggestions', suggestionId)
     await setDoc(suggestionRef, {
@@ -118,7 +120,13 @@ export async function saveCustomDegree(
 
   if (isNewSuggestion) {
     notifyAdmin(
-      `🎓 New curriculum suggestion: ${data.degreeName} at ${data.universityName || ''} (${data.facultyName || ''}). Review in the admin panel.`
+      buildSuggestionNotificationMessage({
+        degreeName: data.degreeName,
+        universityName: data.universityName || '',
+        facultyName: data.facultyName || '',
+        isCurriculumChange,
+        gpaMethod: data.gpaMethod,
+      })
     )
   }
 }
