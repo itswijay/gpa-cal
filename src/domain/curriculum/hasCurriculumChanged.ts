@@ -1,7 +1,9 @@
 import type { SemesterMap, Subject } from '../../data/types'
 
-function sortByCode(subjects: Subject[] | undefined): Subject[] {
-  return [...(subjects ?? [])].sort((a, b) => a.code.localeCompare(b.code))
+function normalizeSubjects(subjects: Subject[] | undefined): Subject[] {
+  return [...(subjects ?? [])]
+    .map((subj) => ({ code: subj.code.trim(), name: subj.name.trim(), credits: subj.credits }))
+    .sort((a, b) => a.code.localeCompare(b.code))
 }
 
 function subjectsEqual(a: Subject[], b: Subject[]): boolean {
@@ -33,8 +35,8 @@ export function hasCurriculumChanged(
     const proposedSem = proposed[semesterName]
 
     if (existingSem.electiveCreditsRequired !== proposedSem.electiveCreditsRequired) return true
-    if (!subjectsEqual(sortByCode(existingSem.core), sortByCode(proposedSem.core))) return true
-    if (!subjectsEqual(sortByCode(existingSem.electives), sortByCode(proposedSem.electives))) return true
+    if (!subjectsEqual(normalizeSubjects(existingSem.core), normalizeSubjects(proposedSem.core))) return true
+    if (!subjectsEqual(normalizeSubjects(existingSem.electives), normalizeSubjects(proposedSem.electives))) return true
   }
 
   return false

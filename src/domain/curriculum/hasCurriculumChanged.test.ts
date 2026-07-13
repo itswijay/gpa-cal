@@ -62,4 +62,18 @@ describe('hasCurriculumChanged', () => {
   it('returns true when existing is null', () => {
     expect(hasCurriculumChanged(null, baseSemesters)).toBe(true)
   })
+
+  it('returns false when a subject name only differs by leading/trailing whitespace', () => {
+    const proposed: SemesterMap = {
+      'Semester 1': {
+        core: [
+          { code: 'CS101', name: 'Intro to CS', credits: 3 },
+          { code: 'CS102', name: ' Data Structures ', credits: 4 },
+        ],
+        electives: [{ code: 'EL101', name: 'Elective One', credits: 2 }],
+        electiveCreditsRequired: 2,
+      },
+    }
+    expect(hasCurriculumChanged(baseSemesters, proposed)).toBe(false)
+  })
 })
