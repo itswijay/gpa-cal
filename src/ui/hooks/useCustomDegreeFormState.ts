@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
 import type { SemesterMap, GpaMethod } from '../../data/types'
@@ -25,7 +25,25 @@ export function useCustomDegreeFormState({
   user,
   authLoading,
 }: UseCustomDegreeFormStateParams) {
-  const [degreeName, setDegreeName] = useState('')
+  const [degreeName, setDegreeNameState] = useState('')
+  // True while the degree name is one the user typed by hand rather than one that came
+  // from a dropdown or from loading their saved degree. Effect #3 below uses it to leave
+  // hand-typed input alone — otherwise it would rewrite and lock the field mid-typing the
+  // moment the text happened to match a public degree. A ref, so it never re-renders or
+  // feeds the effect's dependency array.
+  const degreeNameTypedRef = useRef(false)
+
+  // Programmatic updates (dropdown selections, loading an existing degree) clear the flag;
+  // only the Degree Program Name input uses setDegreeNameTyped.
+  const setDegreeName = useCallback((value: string) => {
+    degreeNameTypedRef.current = false
+    setDegreeNameState(value)
+  }, [])
+
+  const setDegreeNameTyped = useCallback((value: string) => {
+    degreeNameTypedRef.current = true
+    setDegreeNameState(value)
+  }, [])
   const [universityName, setUniversityName] = useState('')
   const [universityShort, setUniversityShort] = useState('')
   const [facultyName, setFacultyName] = useState('')
@@ -162,7 +180,7 @@ export function useCustomDegreeFormState({
       }
     }
     loadExisting()
-  }, [isAuthenticated, user, authLoading])
+  }, [isAuthenticated, user, authLoading, setDegreeName])
 
   // 3. Synchronize dropdown state with loaded custom degree once preloaded universities lists are fetched
   useEffect(() => {
@@ -187,7 +205,7 @@ export function useCustomDegreeFormState({
             const degNames = Object.keys(matchedUni.faculties[matchedFaculty] || {})
             setPreloadedDegrees(degNames)
             
-            if (degreeName) {
+            if (degreeName && !degreeNameTypedRef.current) {
               const matchedDegree = degNames.find(
                 (deg) => deg.toLowerCase().trim() === degreeName.toLowerCase().trim()
               )
@@ -212,11 +230,12 @@ export function useCustomDegreeFormState({
         setSelectedDegreeOption('custom')
       }
     }
-  }, [preloadedUniversities, universityShort, facultyName, degreeName])
+  }, [preloadedUniversities, universityShort, facultyName, degreeName, setDegreeName])
 
   return {
     degreeName,
     setDegreeName,
+    setDegreeNameTyped,
     universityName,
     setUniversityName,
     universityShort,

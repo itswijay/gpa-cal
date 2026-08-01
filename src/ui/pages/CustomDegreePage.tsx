@@ -17,6 +17,7 @@ import type { CustomDegreeData } from '../../adapters/firebase/curriculumReposit
 import { Spinner } from '../components/ui/spinner'
 import { validateCustomDegreeForm } from '../../domain/curriculum/validateCustomDegreeForm'
 import { validateYearWeightConfig } from '../../domain/curriculum/validateYearWeightConfig'
+import { isDuplicatePublicDegree } from '../../domain/curriculum/findMatchingPublicDegree'
 import type { DynamicSubject, DynamicSemester } from '../../domain/curriculum/customDegreeForm'
 import { mapSemesterMapToDynamicSemesters } from '../../domain/curriculum/mapSemesterMapToDynamicSemesters'
 import { mapDynamicSemestersToSemesterMap } from '../../domain/curriculum/mapDynamicSemestersToSemesterMap'
@@ -34,6 +35,7 @@ export default function CustomDegreePage() {
   const {
     degreeName,
     setDegreeName,
+    setDegreeNameTyped,
     universityName,
     setUniversityName,
     universityShort,
@@ -340,6 +342,30 @@ export default function CustomDegreePage() {
 
     if (!validationResult.valid) {
       toast.error(validationResult.error)
+      return
+    }
+
+    // A hand-typed degree name must not shadow one that already exists publicly — the user
+    // should pick that degree from the dropdown and edit it instead of creating a private
+    // duplicate. When the name came from the dropdown (or the form state matched their own
+    // saved degree to a public entry on load), selectedDegreeOption holds the preloaded
+    // name and the save is legitimate.
+    const degreeCameFromDropdown =
+      selectedDegreeOption !== '' && selectedDegreeOption !== 'custom'
+
+    if (
+      !degreeCameFromDropdown &&
+      isDuplicatePublicDegree({
+        universityShort,
+        facultyName,
+        degreeName,
+        preloadedUniversities,
+      })
+    ) {
+      toast.error(
+        `A degree named '${degreeName.trim()}' already exists for ${facultyName.trim()}. ` +
+        `Please select it from the list and edit it instead of creating a duplicate.`
+      )
       return
     }
 
@@ -699,7 +725,7 @@ export default function CustomDegreePage() {
                     placeholder="e.g. BSc in Computer Science"
                     value={degreeName}
                     onChange={(e) => {
-                      setDegreeName(e.target.value)
+                      setDegreeNameTyped(e.target.value)
                       setHasUserEdited(true)
                     }}
                     className={`bg-muted/50 border-border h-11 transition-all ${
