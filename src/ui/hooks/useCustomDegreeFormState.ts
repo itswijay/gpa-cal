@@ -4,6 +4,7 @@ import { getCustomDegree } from '../../adapters/firebase/curriculumRepository'
 import type { SemesterMap, GpaMethod } from '../../data/types'
 import type { DynamicSemester } from '../../domain/curriculum/customDegreeForm'
 import { mapSemesterMapToDynamicSemesters } from '../../domain/curriculum/mapSemesterMapToDynamicSemesters'
+import { resolveCurriculumSelection } from '../../domain/curriculum/resolveCurriculumSelection'
 import { db } from '../../adapters/firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
@@ -184,51 +185,33 @@ export function useCustomDegreeFormState({
 
   // 3. Synchronize dropdown state with loaded custom degree once preloaded universities lists are fetched
   useEffect(() => {
-    if (universityShort && preloadedUniversities.length > 0) {
-      const uShort = universityShort.toUpperCase().trim()
-      const matchedUni = preloadedUniversities.find(uni => uni.shortName === uShort)
-      
-      if (matchedUni) {
-        setSelectedUniversityOption(uShort)
-        const facNames = Object.keys(matchedUni.faculties || {})
-        setPreloadedFaculties(facNames)
-        
-        // Check if the loaded faculty matches one of the preloaded faculties
-        if (facultyName) {
-          const matchedFaculty = facNames.find(
-            (fac) => fac.toLowerCase().trim() === facultyName.toLowerCase().trim()
-          )
-          if (matchedFaculty) {
-            setSelectedFacultyOption(matchedFaculty)
-            setFacultyName(matchedFaculty) // normalize casing
-            
-            const degNames = Object.keys(matchedUni.faculties[matchedFaculty] || {})
-            setPreloadedDegrees(degNames)
-            
-            if (degreeName && !degreeNameTypedRef.current) {
-              const matchedDegree = degNames.find(
-                (deg) => deg.toLowerCase().trim() === degreeName.toLowerCase().trim()
-              )
-              if (matchedDegree) {
-                setSelectedDegreeOption(matchedDegree)
-                setDegreeName(matchedDegree) // normalize casing
-              } else {
-                setSelectedDegreeOption('custom')
-              }
-            }
-          } else {
-            setSelectedFacultyOption('custom')
-            setPreloadedDegrees([])
-            setSelectedDegreeOption('custom')
-          }
-        }
-      } else {
-        setSelectedUniversityOption('custom')
-        setPreloadedFaculties([])
-        setSelectedFacultyOption('custom')
-        setPreloadedDegrees([])
-        setSelectedDegreeOption('custom')
-      }
+    const resolved = resolveCurriculumSelection({
+      universityShort,
+      facultyName,
+      degreeName,
+      degreeNameWasTyped: degreeNameTypedRef.current,
+      preloadedUniversities,
+    })
+    if (!resolved) return
+
+    // A null field means resolution didn't reach that piece of state, which is not the same
+    // as clearing it — see resolveCurriculumSelection.
+    setSelectedUniversityOption(resolved.selectedUniversityOption)
+    setPreloadedFaculties(resolved.preloadedFaculties)
+    if (resolved.selectedFacultyOption !== null) {
+      setSelectedFacultyOption(resolved.selectedFacultyOption)
+    }
+    if (resolved.normalizedFacultyName !== null) {
+      setFacultyName(resolved.normalizedFacultyName)
+    }
+    if (resolved.preloadedDegrees !== null) {
+      setPreloadedDegrees(resolved.preloadedDegrees)
+    }
+    if (resolved.selectedDegreeOption !== null) {
+      setSelectedDegreeOption(resolved.selectedDegreeOption)
+    }
+    if (resolved.normalizedDegreeName !== null) {
+      setDegreeName(resolved.normalizedDegreeName)
     }
   }, [preloadedUniversities, universityShort, facultyName, degreeName, setDegreeName])
 
